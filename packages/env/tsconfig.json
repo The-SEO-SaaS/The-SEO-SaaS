@@ -1,0 +1,3 @@
+{
+  "extends": "@theseosaas/config/tsconfig.base.json"
+}

@@ -1,0 +1,35 @@
+{
+  "name": "theseosaas",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "dev:web": "turbo run dev -F web",
+    "db:push": "turbo run db:push -F @theseosaas/db",
+    "db:studio": "turbo run db:studio -F @theseosaas/db",
+    "db:generate": "turbo run db:generate -F @theseosaas/db",
+    "db:migrate": "turbo run db:migrate -F @theseosaas/db",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "dependencies": {
+    "@theseosaas/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@theseosaas/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "turbo": "^2.10.2",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@11.4.0"
+}
