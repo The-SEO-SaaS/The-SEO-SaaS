@@ -4,127 +4,279 @@
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
-@custom-variant dark (&:is(.dark *));
+/* ===========================================================================
+   TheSEOSaaS design tokens
+   Extracted from the design file. Light mode only — there is deliberately no
+   .dark block and no theme toggle in v0.1.
+
+   The palette is ink-on-white: a near-black navy (#0B1220) carries every
+   primary action and heading, and colour is reserved for meaning — orange is
+   opportunity/urgency, green is healthy, amber is caution, red is critical.
+   =========================================================================== */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  /* --- Ink scale: headings, primary surfaces, body copy ------------------ */
+  --ink-900: #0b1220; /* primary buttons, headings, logo mark */
+  --ink-800: #28303c;
+  --ink-700: #3f4854; /* secondary button label, strong body */
+  --ink-600: #4a5462;
+  --ink-500: #5b6472;
+  --ink-400: #6b7480; /* the workhorse — most body/secondary text */
+  --ink-300: #9aa2ae; /* de-emphasised meta */
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.87 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* --- Neutral surfaces and borders ------------------------------------- */
+  --surface: #ffffff;
+  --surface-subtle: #fafafb;
+  --surface-muted: #f8f9fa;
+  --surface-sunken: #f1f3f7;
+  --surface-sunken-alt: #edeff3;
+  --surface-tint: #f3f5f8;
+
+  --line: #e2e6ec; /* default border — on nearly every surface */
+  --line-soft: #edeff3;
+  --line-softer: #e7eaef;
+  --line-strong: #d3d8e0;
+  --line-stronger: #c6cdd8;
+
+  /* --- Semantic: opportunity / urgency (the "act now" colour) ------------ */
+  --opportunity: #ea580c;
+  --opportunity-bright: #f97316;
+  --opportunity-strong: #9a3412;
+  --opportunity-surface: #fff6ee;
+  --opportunity-line: #fcd9b6;
+
+  /* --- Semantic: healthy / winning -------------------------------------- */
+  --success: #16a34a;
+  --success-strong: #15803d;
+  --success-surface: #f0fdf4;
+  --success-line: #c6ebd1;
+
+  /* --- Semantic: caution ------------------------------------------------- */
+  --caution: #b45309;
+  --caution-surface: #fffbeb;
+  --caution-surface-alt: #feefdc;
+  --caution-line: #f5dfb4;
+
+  /* --- Semantic: critical ------------------------------------------------ */
+  --critical: #dc2626;
+  --critical-strong: #b91c1c;
+
+  /* --- Accent: informational highlights ---------------------------------- */
+  --info: #0f766e;
+  --info-surface: #d8f3e4;
+  --info-surface-soft: #f5fcf8;
+
+  /* --- shadcn contract --------------------------------------------------- */
+  --background: var(--surface);
+  --foreground: var(--ink-900);
+  --card: var(--surface);
+  --card-foreground: var(--ink-900);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink-900);
+  --primary: var(--ink-900);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--ink-700);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--ink-400);
+  --accent: var(--opportunity-surface);
+  --accent-foreground: var(--opportunity);
+  --destructive: var(--critical);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--ink-900);
+
+  --sidebar: var(--surface-subtle);
+  --sidebar-foreground: var(--ink-400);
+  --sidebar-primary: var(--ink-900);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--surface-sunken);
+  --sidebar-accent-foreground: var(--ink-900);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--ink-900);
+
+  /* --- Radius -----------------------------------------------------------
+     The design uses a deliberate range: tiny marks at 2px, badges at 5–6px,
+     controls at 10px, cards at 12px, panels at 16px, pills at 999px.
+     --radius is the control radius, which shadcn derives from.             */
+  --radius: 10px;
+
+  /* --- Elevation ---------------------------------------------------------
+     Tinted with the ink colour rather than pure black, so shadows sit
+     correctly against the cool-neutral greys.                              */
+  --shadow-panel: 0 24px 60px -30px rgba(11, 18, 32, 0.28);
+  --shadow-card: 0 1px 2px rgba(11, 18, 32, 0.04);
+  --shadow-popover: 0 8px 24px -8px rgba(11, 18, 32, 0.16);
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
+  /* Instrument Sans for headings/UI, Inter for body — matching the design. */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Instrument Sans", "Inter", ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Named ink steps, so components say text-ink-400 rather than guessing. */
+  --color-ink-900: var(--ink-900);
+  --color-ink-800: var(--ink-800);
+  --color-ink-700: var(--ink-700);
+  --color-ink-600: var(--ink-600);
+  --color-ink-500: var(--ink-500);
+  --color-ink-400: var(--ink-400);
+  --color-ink-300: var(--ink-300);
+
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-tint: var(--surface-tint);
+
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-line-strong: var(--line-strong);
+
+  --color-opportunity: var(--opportunity);
+  --color-opportunity-strong: var(--opportunity-strong);
+  --color-opportunity-surface: var(--opportunity-surface);
+  --color-opportunity-line: var(--opportunity-line);
+
+  --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
+  --color-success-surface: var(--success-surface);
+  --color-success-line: var(--success-line);
+
+  --color-caution: var(--caution);
+  --color-caution-surface: var(--caution-surface);
+  --color-caution-line: var(--caution-line);
+
+  --color-critical: var(--critical);
+  --color-critical-strong: var(--critical-strong);
+
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
+
+  /* Radius scale, mirroring the values actually present in the design. */
+  --radius-xs: 5px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+
+  /* Type scale. The design works at small sizes with half-pixel steps —
+     these are its exact sizes, not a generic scale. */
+  --text-2xs: 10.5px;
+  --text-xs: 11px;
+  --text-xs-plus: 11.5px;
+  --text-sm: 12.5px;
+  --text-sm-plus: 13px;
+  --text-base: 13.5px;
+  --text-md: 14px;
+  --text-lg: 15px;
+  --text-xl: 17px;
+  --text-2xl: 19px;
+  --text-3xl: 26px;
+  --text-4xl: 31px;
+  --text-5xl: 33px;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply font-sans bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    /* Tabular figures so SEO scores and rank numbers don't jitter as they
+       update, plus the alternate 'a' the design uses. */
+    font-feature-settings:
+      "tnum" 1,
+      "cv05" 1;
+    -webkit-font-smoothing: antialiased;
   }
+
   html {
     @apply font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+  }
+
+  a {
+    @apply text-ink-900 font-medium no-underline;
+  }
+
+  a:hover {
+    @apply text-ink-700 underline;
+  }
+}
+
+/* ===========================================================================
+   Reusable composites
+   These exist because the pattern repeats across many screens and hand-rolling
+   the class list each time is how drift starts. Anything appearing on fewer
+   than ~3 screens should stay a component, not a utility.
+   =========================================================================== */
+@layer components {
+  /* Panel: the large white container a whole screen section sits in. */
+  .panel {
+    @apply bg-surface border-line rounded-2xl border shadow-[0_24px_60px_-30px_rgba(11,18,32,0.28)];
+  }
+
+  /* Card: standard bordered content block. */
+  .card-surface {
+    @apply bg-surface border-line rounded-xl border;
+  }
+
+  /* Sunken well: nested or secondary content inside a card. */
+  .well {
+    @apply bg-surface-sunken border-line-soft rounded-xl border;
+  }
+
+  /* Eyebrow: small uppercase label above a section heading. */
+  .eyebrow {
+    @apply text-2xs font-semibold tracking-[0.09em] uppercase;
+  }
+
+  /* The mandatory "why it matters" line under any finding. */
+  .why-line {
+    @apply text-ink-400 text-sm leading-relaxed;
+  }
+
+  /* Large tabular number used for scores. */
+  .metric {
+    @apply font-display text-ink-900 text-4xl leading-none font-semibold tabular-nums;
   }
 }
