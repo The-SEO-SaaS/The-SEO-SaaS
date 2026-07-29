@@ -1,7 +1,8 @@
-export { crawlSite, type CrawlResult } from "./crawl.js";
+export { crawlSite, type SiteCrawl, type PageCrawl } from "./crawl.js";
 export {
   runTechnicalChecks,
   type TechnicalIssue,
+  type TechnicalSummary,
   type IssueSeverity,
 } from "./technical.js";
 export { calculateScore, type ScoreBreakdown } from "./score.js";

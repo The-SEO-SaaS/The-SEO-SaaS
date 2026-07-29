@@ -50,6 +50,11 @@ model Audit {
   /// Consultant-voice verdict shown instead of a bare number.
   summary         String?
 
+  /// Denormalised so the report header can show totals without loading every
+  /// issue row, and so the paywall can say "38 more findings" honestly.
+  issueCount   Int @default(0)
+  pagesCrawled Int @default(0)
+
   /// Raw provider payloads kept for debugging and for regenerating the report
   /// without re-paying for Serpex/OpenRouter calls.
   rawData Json?

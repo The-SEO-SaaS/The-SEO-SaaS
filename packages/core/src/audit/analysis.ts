@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { generateObject, sumUsage, type Usage } from "../ai/openrouter.js";
 import { SEO_LEAD_SYSTEM_PROMPT } from "../ai/prompts.js";
-import type { CrawlResult } from "./crawl.js";
+import type { SiteCrawl } from "./crawl.js";
 import type { CompetitorBestPage, DiscoveredCompetitor } from "./competitors.js";
 
 /**
@@ -37,7 +37,7 @@ const positioningSchema = z.object({
 export type Positioning = z.infer<typeof positioningSchema>;
 
 export async function extractPositioning(
-  crawl: CrawlResult,
+  crawl: SiteCrawl,
   signal?: AbortSignal,
 ): Promise<{ positioning: Positioning; usage: Usage }> {
   const { object, usage } = await generateObject({
@@ -52,13 +52,19 @@ export async function extractPositioning(
         content: `Read this homepage and work out what the product actually is.
 
 Domain: ${crawl.domain}
-Title: ${crawl.title ?? "(none)"}
-Meta description: ${crawl.metaDescription ?? "(none)"}
-H1: ${crawl.h1s.join(" | ") || "(none)"}
-H2s: ${crawl.h2s.slice(0, 12).join(" | ") || "(none)"}
+Title: ${crawl.homepage.title ?? "(none)"}
+Meta description: ${crawl.homepage.metaDescription ?? "(none)"}
+H1: ${crawl.homepage.h1s.join(" | ") || "(none)"}
+H2s: ${crawl.homepage.h2s.slice(0, 12).join(" | ") || "(none)"}
 
-Page text:
-${crawl.textContent.slice(0, 3500)}
+Other pages on the site:
+${crawl.pages
+  .slice(1, 15)
+  .map((page) => `- ${page.title ?? page.url}`)
+  .join("\n") || "- (none crawled)"}
+
+Homepage text:
+${crawl.homepageText.slice(0, 3500)}
 
 The seed queries matter most: they must be terms a buyer types when they do NOT yet know this company exists. "project management software for agencies" is right. "${crawl.domain}" or the brand name is wrong.`,
       },

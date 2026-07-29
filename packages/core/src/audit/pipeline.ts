@@ -84,21 +84,22 @@ export async function runAuditPipeline({
   try {
     // --- 1. Crawl (fatal on failure) -------------------------------------
     await report("CRAWLING_WEBSITE");
-    const crawl = await crawlSite(domain);
+    const crawl = await crawlSite(domain, { signal });
 
     // --- 2. Technical checks (deterministic, no provider cost) ------------
     await report("CHECKING_TECHNICAL_SEO");
-    const issues = runTechnicalChecks(crawl);
+    const technical = runTechnicalChecks(crawl);
+    const issues = technical.issues;
 
     // Positioning drives every later step's query quality, so it runs here
     // rather than being folded into a later call.
     const positioningResult = await settle(extractPositioning(crawl, signal));
     const positioning = positioningResult?.positioning ?? {
-      productDescription: crawl.title ?? domain,
+      productDescription: crawl.homepage.title ?? domain,
       category: "software",
       targetAudience: "businesses",
       // Fallback seeds are weak but keep the audit moving if the model fails.
-      seedQueries: [crawl.title ?? domain, `${domain} alternative`],
+      seedQueries: [crawl.homepage.title ?? domain, `${domain} alternative`],
       industryHint: "software",
     };
 
@@ -162,6 +163,8 @@ export async function runAuditPipeline({
           score: score.overall,
           technicalHealth: score.technicalHealth,
           summary: opportunities?.verdict ?? null,
+          issueCount: issues.length,
+          pagesCrawled: crawl.crawledCount,
           completedAt: new Date(),
           searchCredits,
           aiInputTokens: usage.inputTokens,
@@ -171,13 +174,16 @@ export async function runAuditPipeline({
             positioning,
             keywordHeadline: gapsResult?.gaps.headline ?? null,
             contentHealth: score.contentHealth,
+            band: score.band,
+            counts: technical.counts,
+            healthy: technical.healthy,
             crawl: {
               finalUrl: crawl.finalUrl,
-              title: crawl.title,
-              metaDescription: crawl.metaDescription,
-              wordCount: crawl.wordCount,
-              internalLinks: crawl.internalLinks.length,
-              responseTimeMs: crawl.responseTimeMs,
+              title: crawl.homepage.title,
+              metaDescription: crawl.homepage.metaDescription,
+              pagesCrawled: crawl.crawledCount,
+              pagesDiscovered: crawl.discoveredUrlCount,
+              avgResponseTimeMs: crawl.avgResponseTimeMs,
             },
           } as Prisma.InputJsonValue,
         },
