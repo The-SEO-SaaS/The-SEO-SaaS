@@ -1,15 +1,15 @@
-import type { CrawlResult } from "./crawl.js";
+import type { PageCrawl, SiteCrawl } from "./crawl.js";
 
 /**
- * Technical SEO checks.
+ * Technical SEO checks across the crawled pages.
  *
- * Rules are deterministic and derived from the crawl — no model call, because
- * these are objective facts and paying for tokens to restate them would be
- * waste. The model's job is interpretation, not detection.
+ * Deterministic rules, no model call — these are objective facts and paying
+ * tokens to restate them would be waste. The model's job is interpretation.
  *
- * Every issue carries `whyItMatters` in business terms. The report shows only
- * the top few by rank, never the full list: a founder who sees 30 findings
- * fixes none of them.
+ * Findings are site-wide and carry the pages they affect, so the report can say
+ * "14 pages" rather than "your site has an issue". Ranking is by impact, and
+ * the free report shows only the top few: a founder who sees 40 findings fixes
+ * none of them.
  */
 
 export type IssueSeverity = "CRITICAL" | "WARNING" | "NOTICE";
@@ -21,11 +21,17 @@ export interface TechnicalIssue {
   whyItMatters: string;
   howToFix: string | null;
   affectedUrls: string[];
-  /** Lower sorts first. Set by severity and business impact, not check order. */
+  affectedCount: number;
   rank: number;
 }
 
-/** Recommended lengths — Google truncates roughly here in practice. */
+export interface TechnicalSummary {
+  issues: TechnicalIssue[];
+  counts: { critical: number; warning: number; notice: number };
+  /** Things that are already right — the design shows these too. */
+  healthy: string[];
+}
+
 const TITLE_MIN = 30;
 const TITLE_MAX = 60;
 const META_MIN = 70;
@@ -33,11 +39,142 @@ const META_MAX = 160;
 const THIN_CONTENT_WORDS = 300;
 const SLOW_RESPONSE_MS = 2500;
 
-export function runTechnicalChecks(crawl: CrawlResult): TechnicalIssue[] {
-  const issues: TechnicalIssue[] = [];
-  const page = [crawl.finalUrl];
+/** Cap stored URLs — a 50-page site could otherwise attach 50 links per issue. */
+const MAX_STORED_URLS = 10;
 
-  // --- Blocking issues: the site can't rank at all ------------------------
+interface IssueDraft {
+  code: string;
+  severity: IssueSeverity;
+  title: (count: number) => string;
+  whyItMatters: (count: number, crawl: SiteCrawl) => string;
+  howToFix: string | null;
+  rank: number;
+  /** Pages failing this check. */
+  test: (page: PageCrawl) => boolean;
+}
+
+/**
+ * Per-page checks. Each runs across every crawled page and collapses into one
+ * finding carrying its affected pages.
+ */
+const PAGE_CHECKS: IssueDraft[] = [
+  {
+    code: "MISSING_TITLE",
+    severity: "CRITICAL",
+    rank: 2,
+    test: (page) => !page.title,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} no title tag`,
+    whyItMatters: () =>
+      "The title is the clickable headline in search results. Without one, Google invents something from the page content — usually badly — and click-through rate suffers.",
+    howToFix: "Add a <title> describing what the page covers, in 50–60 characters.",
+  },
+  {
+    code: "MISSING_META_DESCRIPTION",
+    severity: "WARNING",
+    rank: 10,
+    test: (page) => !page.metaDescription,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} no meta description`,
+    whyItMatters: () =>
+      "This is your ad copy in search results. Without it Google scrapes an arbitrary sentence from the page, which rarely sells anything.",
+    howToFix: `Write a ${META_MIN}–${META_MAX} character description stating the outcome the page delivers.`,
+  },
+  {
+    code: "MISSING_H1",
+    severity: "WARNING",
+    rank: 11,
+    test: (page) => page.h1s.length === 0,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} no H1 heading`,
+    whyItMatters: () =>
+      "The H1 is the strongest on-page signal of what a page is about. Without one, search engines are guessing at the primary topic.",
+    howToFix: "Add a single H1 stating what the page covers.",
+  },
+  {
+    code: "MULTIPLE_H1",
+    severity: "NOTICE",
+    rank: 26,
+    test: (page) => page.h1s.length > 1,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} multiple H1 headings`,
+    whyItMatters: () =>
+      "Multiple H1s dilute the topic signal. One clear primary heading ranks better than several competing ones.",
+    howToFix: "Keep one H1 per page and demote the rest to H2.",
+  },
+  {
+    code: "SHORT_TITLE",
+    severity: "WARNING",
+    rank: 12,
+    test: (page) => Boolean(page.title && page.title.length < TITLE_MIN),
+    title: (count) => `${count} ${count === 1 ? "title is" : "titles are"} too short to be useful`,
+    whyItMatters: () =>
+      "You're leaving space unused in the one line buyers read before deciding whether to click. A fuller title can carry both what the page covers and who it's for.",
+    howToFix: `Expand titles to ${TITLE_MIN}–${TITLE_MAX} characters.`,
+  },
+  {
+    code: "LONG_TITLE",
+    severity: "NOTICE",
+    rank: 22,
+    test: (page) => Boolean(page.title && page.title.length > TITLE_MAX),
+    title: (count) => `${count} ${count === 1 ? "title" : "titles"} will be cut off in search`,
+    whyItMatters: () =>
+      "Google truncates around 60 characters, so the end of these titles never gets read. If the value proposition sits at the end, it's invisible.",
+    howToFix: `Trim titles to under ${TITLE_MAX} characters.`,
+  },
+  {
+    code: "MISSING_CANONICAL",
+    severity: "NOTICE",
+    rank: 28,
+    test: (page) => !page.canonical,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} no canonical URL`,
+    whyItMatters: () =>
+      "Canonical tags stop duplicate versions of a page — with and without www, with tracking parameters — from splitting ranking signals between them.",
+    howToFix: 'Add <link rel="canonical"> pointing at the preferred URL.',
+  },
+  {
+    code: "THIN_CONTENT",
+    severity: "WARNING",
+    rank: 14,
+    test: (page) => page.wordCount < THIN_CONTENT_WORDS,
+    title: (count) => `${count} ${count === 1 ? "page is" : "pages are"} very light on content`,
+    whyItMatters: () =>
+      `With under ${THIN_CONTENT_WORDS} words there isn't much for Google to understand or rank, and buyers comparing options have little to read before deciding.`,
+    howToFix: "Expand with the problems you solve, who it's for, and the outcomes customers get.",
+  },
+  {
+    code: "NOINDEX",
+    severity: "WARNING",
+    rank: 8,
+    test: (page) => page.isNoIndex,
+    title: (count) => `${count} ${count === 1 ? "page is" : "pages are"} marked noindex`,
+    whyItMatters: () =>
+      "These pages are explicitly excluded from search. That's correct for admin or thank-you pages, and a costly mistake on anything you want found.",
+    howToFix: "Remove the noindex directive from any page that should rank.",
+  },
+  {
+    code: "IMAGES_MISSING_ALT",
+    severity: "NOTICE",
+    rank: 34,
+    test: (page) => page.imageCount > 0 && page.imagesMissingAlt / page.imageCount > 0.5,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} images without alt text`,
+    whyItMatters: () =>
+      "Alt text is both an accessibility requirement and a ranking signal for image search.",
+    howToFix: "Describe each meaningful image in its alt attribute.",
+  },
+  {
+    code: "MISSING_OPEN_GRAPH",
+    severity: "NOTICE",
+    rank: 30,
+    test: (page) => !page.hasOpenGraph,
+    title: (count) => `${count} ${count === 1 ? "page has" : "pages have"} no social preview tags`,
+    whyItMatters: () =>
+      "Shared on X, LinkedIn or Slack these render as a bare URL with no image or headline. For a product that grows through founder sharing, that's a wasted impression every time.",
+    howToFix: "Add og:title, og:description and og:image meta tags.",
+  },
+];
+
+export function runTechnicalChecks(crawl: SiteCrawl): TechnicalSummary {
+  const issues: TechnicalIssue[] = [];
+  const homeUrl = [crawl.finalUrl];
+
+  // --- Site-wide blocking issues ------------------------------------------
   if (crawl.blocksIndexing) {
     issues.push({
       code: "ROBOTS_BLOCKS_ALL",
@@ -48,6 +185,7 @@ export function runTechnicalChecks(crawl: CrawlResult): TechnicalIssue[] {
       howToFix:
         "Remove the `Disallow: /` line from robots.txt, then request indexing in Google Search Console.",
       affectedUrls: [new URL("/robots.txt", crawl.finalUrl).toString()],
+      affectedCount: 1,
       rank: 0,
     });
   }
@@ -60,98 +198,12 @@ export function runTechnicalChecks(crawl: CrawlResult): TechnicalIssue[] {
       whyItMatters:
         "Browsers mark HTTP sites as 'Not secure', and it's a confirmed ranking signal. For a SaaS asking people to sign up, it also kills trust at exactly the wrong moment.",
       howToFix: "Enable TLS at your host or CDN and redirect all HTTP traffic to HTTPS.",
-      affectedUrls: page,
+      affectedUrls: homeUrl,
+      affectedCount: crawl.crawledCount,
       rank: 1,
     });
   }
 
-  // --- Title -------------------------------------------------------------
-  if (!crawl.title) {
-    issues.push({
-      code: "MISSING_TITLE",
-      severity: "CRITICAL",
-      title: "Your homepage has no title tag",
-      whyItMatters:
-        "The title is the clickable headline in search results. Without one, Google invents something from your page content — usually badly — and your click-through rate suffers.",
-      howToFix: "Add a <title> describing what you do and who it's for, in 50–60 characters.",
-      affectedUrls: page,
-      rank: 2,
-    });
-  } else if (crawl.title.length < TITLE_MIN) {
-    issues.push({
-      code: "SHORT_TITLE",
-      severity: "WARNING",
-      title: "Your homepage title is too short to be useful",
-      whyItMatters:
-        "You're leaving space unused in the one line buyers read before deciding whether to click. A longer title can carry both what you do and who it's for.",
-      howToFix: `Expand to ${TITLE_MIN}–${TITLE_MAX} characters. Currently ${crawl.title.length}.`,
-      affectedUrls: page,
-      rank: 12,
-    });
-  } else if (crawl.title.length > TITLE_MAX) {
-    issues.push({
-      code: "LONG_TITLE",
-      severity: "NOTICE",
-      title: "Your homepage title will be cut off in search results",
-      whyItMatters:
-        "Google truncates around 60 characters, so the end of your title never gets read. If your value proposition is at the end, it's invisible.",
-      howToFix: `Trim to under ${TITLE_MAX} characters. Currently ${crawl.title.length}.`,
-      affectedUrls: page,
-      rank: 22,
-    });
-  }
-
-  // --- Meta description --------------------------------------------------
-  if (!crawl.metaDescription) {
-    issues.push({
-      code: "MISSING_META_DESCRIPTION",
-      severity: "WARNING",
-      title: "Your homepage has no meta description",
-      whyItMatters:
-        "This is your ad copy in search results. Without it Google scrapes an arbitrary sentence from your page, which rarely sells anything.",
-      howToFix: `Write a ${META_MIN}–${META_MAX} character description that states the outcome you deliver.`,
-      affectedUrls: page,
-      rank: 10,
-    });
-  } else if (crawl.metaDescription.length < META_MIN) {
-    issues.push({
-      code: "SHORT_META_DESCRIPTION",
-      severity: "NOTICE",
-      title: "Your meta description is shorter than it needs to be",
-      whyItMatters:
-        "You have roughly 160 characters of free advertising under every search listing and you're using a fraction of it.",
-      howToFix: `Expand toward ${META_MAX} characters. Currently ${crawl.metaDescription.length}.`,
-      affectedUrls: page,
-      rank: 24,
-    });
-  }
-
-  // --- Headings ----------------------------------------------------------
-  if (crawl.h1s.length === 0) {
-    issues.push({
-      code: "MISSING_H1",
-      severity: "WARNING",
-      title: "Your homepage has no H1 heading",
-      whyItMatters:
-        "The H1 is the strongest on-page signal of what a page is about. Without one, search engines are guessing at your primary topic.",
-      howToFix: "Add a single H1 stating what your product does.",
-      affectedUrls: page,
-      rank: 11,
-    });
-  } else if (crawl.h1s.length > 1) {
-    issues.push({
-      code: "MULTIPLE_H1",
-      severity: "NOTICE",
-      title: `Your homepage has ${crawl.h1s.length} H1 headings`,
-      whyItMatters:
-        "Multiple H1s dilute the topic signal. One clear primary heading ranks better than several competing ones.",
-      howToFix: "Keep one H1 and demote the rest to H2.",
-      affectedUrls: page,
-      rank: 26,
-    });
-  }
-
-  // --- Discoverability ---------------------------------------------------
   if (!crawl.hasSitemap) {
     issues.push({
       code: "MISSING_SITEMAP",
@@ -160,94 +212,13 @@ export function runTechnicalChecks(crawl: CrawlResult): TechnicalIssue[] {
       whyItMatters:
         "A sitemap tells Google which pages exist and when they changed. Without one, new pages you publish can take far longer to get indexed — which directly delays the payoff from any content you create.",
       howToFix: "Publish /sitemap.xml and reference it from robots.txt.",
-      affectedUrls: page,
+      affectedUrls: homeUrl,
+      affectedCount: 1,
       rank: 13,
     });
   }
 
-  if (!crawl.canonical) {
-    issues.push({
-      code: "MISSING_CANONICAL",
-      severity: "NOTICE",
-      title: "Your homepage has no canonical URL",
-      whyItMatters:
-        "Canonical tags stop duplicate versions of a page (with and without www, with tracking parameters) from splitting your ranking signals.",
-      howToFix: 'Add <link rel="canonical" href="..."> pointing at the preferred URL.',
-      affectedUrls: page,
-      rank: 28,
-    });
-  }
-
-  // --- Content depth -----------------------------------------------------
-  if (crawl.wordCount < THIN_CONTENT_WORDS) {
-    issues.push({
-      code: "THIN_CONTENT",
-      severity: "WARNING",
-      title: "Your homepage is very light on text",
-      whyItMatters:
-        "With roughly " +
-        crawl.wordCount +
-        " words there isn't much for Google to understand or rank. It also means buyers comparing options have little to read before deciding.",
-      howToFix:
-        "Expand the page with the problems you solve, who you're for, and the outcomes customers get.",
-      affectedUrls: page,
-      rank: 14,
-    });
-  }
-
-  // --- Secondary signals -------------------------------------------------
-  if (!crawl.hasOpenGraph) {
-    issues.push({
-      code: "MISSING_OPEN_GRAPH",
-      severity: "NOTICE",
-      title: "Your pages have no social preview tags",
-      whyItMatters:
-        "When someone shares your link on X, LinkedIn or Slack it renders as a bare URL with no image or headline. For a product that grows through founder sharing, that's a wasted impression every time.",
-      howToFix: "Add og:title, og:description and og:image meta tags.",
-      affectedUrls: page,
-      rank: 30,
-    });
-  }
-
-  if (!crawl.hasStructuredData) {
-    issues.push({
-      code: "MISSING_STRUCTURED_DATA",
-      severity: "NOTICE",
-      title: "No structured data found",
-      whyItMatters:
-        "Schema markup is what makes rich results possible — pricing, ratings, FAQs shown directly in search. Without it your listing is plain text next to competitors' enhanced ones.",
-      howToFix: "Add JSON-LD for Organization and SoftwareApplication.",
-      affectedUrls: page,
-      rank: 32,
-    });
-  }
-
-  if (crawl.imageCount > 0 && crawl.imagesMissingAlt / crawl.imageCount > 0.5) {
-    issues.push({
-      code: "IMAGES_MISSING_ALT",
-      severity: "NOTICE",
-      title: `${crawl.imagesMissingAlt} of ${crawl.imageCount} images have no alt text`,
-      whyItMatters:
-        "Alt text is both an accessibility requirement and a ranking signal for image search.",
-      howToFix: "Describe each meaningful image in its alt attribute.",
-      affectedUrls: page,
-      rank: 34,
-    });
-  }
-
-  if (crawl.responseTimeMs > SLOW_RESPONSE_MS) {
-    issues.push({
-      code: "SLOW_RESPONSE",
-      severity: "WARNING",
-      title: "Your homepage is slow to respond",
-      whyItMatters: `It took ${(crawl.responseTimeMs / 1000).toFixed(1)}s to load. Page speed is a ranking factor, and every extra second measurably increases the share of visitors who leave before seeing anything.`,
-      howToFix: "Check server response time, enable caching, and put a CDN in front of it.",
-      affectedUrls: page,
-      rank: 15,
-    });
-  }
-
-  if (!crawl.hasViewport) {
+  if (!crawl.homepage.hasViewport) {
     issues.push({
       code: "MISSING_VIEWPORT",
       severity: "WARNING",
@@ -255,10 +226,79 @@ export function runTechnicalChecks(crawl: CrawlResult): TechnicalIssue[] {
       whyItMatters:
         "Google indexes the mobile version of your site first. Without a viewport tag your pages render at desktop width on phones, which hurts both rankings and conversions.",
       howToFix: '<meta name="viewport" content="width=device-width, initial-scale=1">',
-      affectedUrls: page,
+      affectedUrls: homeUrl,
+      affectedCount: crawl.crawledCount,
       rank: 9,
     });
   }
 
-  return issues.sort((a, b) => a.rank - b.rank);
+  if (crawl.avgResponseTimeMs > SLOW_RESPONSE_MS) {
+    issues.push({
+      code: "SLOW_RESPONSE",
+      severity: "WARNING",
+      title: "Your pages are slow to respond",
+      whyItMatters: `Pages averaged ${(crawl.avgResponseTimeMs / 1000).toFixed(1)}s to load. Page speed is a ranking factor, and every extra second measurably increases the share of visitors who leave before seeing anything.`,
+      howToFix: "Check server response time, enable caching, and put a CDN in front of it.",
+      affectedUrls: homeUrl,
+      affectedCount: crawl.crawledCount,
+      rank: 15,
+    });
+  }
+
+  if (!crawl.homepage.hasStructuredData) {
+    issues.push({
+      code: "MISSING_STRUCTURED_DATA",
+      severity: "NOTICE",
+      title: "No structured data found",
+      whyItMatters:
+        "Schema markup is what makes rich results possible — pricing, ratings, FAQs shown directly in search. Without it your listing is plain text next to competitors' enhanced ones.",
+      howToFix: "Add JSON-LD for Organization and SoftwareApplication.",
+      affectedUrls: homeUrl,
+      affectedCount: 1,
+      rank: 32,
+    });
+  }
+
+  // --- Per-page checks, collapsed into one finding each --------------------
+  for (const check of PAGE_CHECKS) {
+    const failing = crawl.pages.filter(check.test);
+    if (failing.length === 0) continue;
+
+    issues.push({
+      code: check.code,
+      severity: check.severity,
+      title: check.title(failing.length),
+      whyItMatters: check.whyItMatters(failing.length, crawl),
+      howToFix: check.howToFix,
+      affectedUrls: failing.slice(0, MAX_STORED_URLS).map((page) => page.url),
+      affectedCount: failing.length,
+      rank: check.rank,
+    });
+  }
+
+  issues.sort((a, b) => a.rank - b.rank);
+
+  // --- What's already right -----------------------------------------------
+  // The design surfaces these alongside the problems. Reading only failures
+  // makes a decent site feel broken.
+  const healthy: string[] = [];
+  if (crawl.isHttps) healthy.push("HTTPS is enabled across the site");
+  if (crawl.hasSitemap) healthy.push("A sitemap is published and reachable");
+  if (crawl.hasRobotsTxt && !crawl.blocksIndexing)
+    healthy.push("robots.txt allows search engines to crawl");
+  if (crawl.homepage.hasViewport) healthy.push("Pages are mobile-ready");
+  if (crawl.homepage.hasOpenGraph) healthy.push("Social previews are configured");
+  if (crawl.homepage.hasStructuredData) healthy.push("Structured data is present");
+  if (crawl.pages.every((page) => page.title)) healthy.push("Every crawled page has a title");
+  if (crawl.avgResponseTimeMs <= 1000) healthy.push("Pages respond quickly");
+
+  return {
+    issues,
+    counts: {
+      critical: issues.filter((issue) => issue.severity === "CRITICAL").length,
+      warning: issues.filter((issue) => issue.severity === "WARNING").length,
+      notice: issues.filter((issue) => issue.severity === "NOTICE").length,
+    },
+    healthy,
+  };
 }
