@@ -61,6 +61,14 @@ export interface AuditIssue {
   affectedUrls: string[];
 }
 
+/** What the free tier holds back. Stated honestly rather than hidden. */
+export interface LockedCounts {
+  isLocked: boolean;
+  issues: number;
+  opportunities: number;
+  keywords: number;
+}
+
 export interface CompetitorSummary {
   id: string;
   domain: string;
@@ -94,13 +102,25 @@ export interface AuditReport {
   status: AuditStatus;
   score: number | null;
   technicalHealth: number | null;
+  /** Matches the design's 0–49 / 50–74 / 75+ bands. */
+  band: "POOR" | "FAIR" | "GOOD" | null;
   /** Consultant verdict shown instead of a bare number. */
   summary: string | null;
+
+  pagesCrawled: number;
+  pagesDiscovered: number;
+  counts: { critical: number; warning: number; notice: number };
+  /** What's already right — reading only failures makes a good site feel broken. */
+  healthy: string[];
+
   issues: AuditIssue[];
   competitors: CompetitorSummary[];
   opportunities: OpportunitySummary[];
   keywordGaps: KeywordGap[];
-  /** True once the viewer owns it — hides the signup CTA. */
+  keywordHeadline: string | null;
+
+  locked: LockedCounts;
+  /** True once the viewer owns it — hides the claim CTA. */
   isOwner: boolean;
   createdAt: string;
   completedAt: string | null;
