@@ -69,12 +69,34 @@ export interface SearchResponse {
   cached: boolean;
 }
 
+/**
+ * Serpex engines. We pin to Google rather than `auto`, because competitor
+ * discovery is only as good as the index behind it — "who ranks for X" has to
+ * mean Google, which is where the user's buyers actually are. `auto` would
+ * silently route to DuckDuckGo or Brave and quietly degrade the whole audit.
+ */
+export type SerpexEngine =
+  | "google"
+  | "auto"
+  | "bing"
+  | "duckduckgo"
+  | "brave"
+  | "yahoo"
+  | "yandex";
+
+export type SerpexTimeFilter = "day" | "week" | "month" | "year";
+
+export const DEFAULT_ENGINE: SerpexEngine = "google";
+
 export interface SearchParams {
   q: string;
-  engine?: string;
+  /** Defaults to Google. Override only with a deliberate reason. */
+  engine?: SerpexEngine;
   country?: string;
   language?: string;
   limit?: number;
+  /** Recency window — used when looking for a competitor's *recent* posts. */
+  time?: SerpexTimeFilter;
 }
 
 export interface SearchOptions {
@@ -90,10 +112,13 @@ const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24;
 function cacheKeyFor(params: SearchParams): string {
   const canonical = JSON.stringify({
     q: params.q.trim().toLowerCase(),
-    engine: params.engine ?? null,
+    // Resolved, not raw: an explicit "google" and an omitted engine are the
+    // same query and must share a cache entry.
+    engine: params.engine ?? DEFAULT_ENGINE,
     country: params.country ?? null,
     language: params.language ?? null,
     limit: params.limit ?? null,
+    time: params.time ?? null,
   });
   return createHash("sha256").update(canonical).digest("hex");
 }
@@ -146,10 +171,11 @@ export async function search(
     headers: { authorization: `Bearer ${env.SERPEX_API_KEY}` },
     query: {
       q: params.q,
-      engine: params.engine,
+      engine: params.engine ?? DEFAULT_ENGINE,
       country: params.country,
       language: params.language,
       limit: params.limit,
+      time: params.time,
     },
     timeoutMs: 20_000,
     signal,
