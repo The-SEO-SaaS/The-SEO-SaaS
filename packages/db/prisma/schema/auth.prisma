@@ -17,6 +17,11 @@ model User {
   /// sign-in (Google asserts it) and for a consumed magic link.
   emailVerifiedAt DateTime?
 
+  /// Null until the onboarding flow is finished. Gates the redirect after
+  /// sign-in: unfinished users resume onboarding rather than landing on a
+  /// dashboard they haven't configured.
+  onboardedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
