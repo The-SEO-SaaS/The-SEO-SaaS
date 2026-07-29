@@ -1,0 +1,22 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types --watch src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@theseosaas/core": "workspace:*",
+    "@theseosaas/db": "workspace:*",
+    "@theseosaas/env": "workspace:*",
+    "dotenv": "catalog:"
+  },
+  "devDependencies": {
+    "@theseosaas/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "typescript": "catalog:"
+  }
+}
