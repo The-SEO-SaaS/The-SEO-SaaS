@@ -1,6 +1,7 @@
 import { Badge } from "@theseosaas/ui/components/badge";
 import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
+import { FadeIn, HoverLift, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { SectionHeading } from "@theseosaas/ui/components/section-heading";
 import {
   BarChart3,
@@ -99,126 +100,156 @@ export default function LandingPage() {
 
       {/* --- Hero ---------------------------------------------------------- */}
       <section id="hero" className="border-line border-b">
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <Badge tone="opportunity" shape="pill" className="mb-6">
-            Free audit, no account needed
-          </Badge>
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 sm:py-24">
+          <FadeIn from="none">
+            <Badge tone="opportunity" shape="pill" className="mb-5 sm:mb-6">
+              Free audit, no account needed
+            </Badge>
+          </FadeIn>
 
-          <h1 className="font-display text-ink-900 text-5xl leading-[1.1] font-semibold tracking-tight">
-            An SEO lead for your site, not another dashboard
-          </h1>
+          <FadeIn delay={0.05}>
+            <h1 className="font-display text-ink-900 text-3xl leading-[1.12] font-semibold tracking-tight text-balance sm:text-4xl md:text-5xl">
+              An SEO lead for your site, not another dashboard
+            </h1>
+          </FadeIn>
 
-          <p className="text-ink-400 mx-auto mt-5 max-w-xl text-lg leading-relaxed">
-            We crawl your site, tell you plainly what&apos;s costing you search traffic, then
-            write the pages that close the gap.
-          </p>
+          <FadeIn delay={0.1}>
+            <p className="text-ink-400 mx-auto mt-4 max-w-xl text-base leading-relaxed text-pretty sm:mt-5 sm:text-lg">
+              We crawl your site, tell you plainly what&apos;s costing you search traffic, then
+              write the pages that close the gap.
+            </p>
+          </FadeIn>
 
-          <div className="mx-auto mt-9 max-w-xl">
-            <AuditInput />
-          </div>
-
-          <p className="text-ink-300 mt-3 text-sm">
-            Around two minutes. You get a shareable report link.
-          </p>
+          <FadeIn delay={0.15}>
+            <div className="mx-auto mt-7 max-w-xl sm:mt-9">
+              <AuditInput />
+            </div>
+            <p className="text-ink-300 mt-3 text-sm">
+              Around two minutes. You get a shareable report link.
+            </p>
+          </FadeIn>
         </div>
       </section>
 
       {/* --- Problem ------------------------------------------------------- */}
-      <section className="mx-auto max-w-6xl space-y-10 px-6 py-24">
-        <SectionHeading
-          eyebrow="Why teams switch"
-          title="Knowing your traffic dropped isn't the same as knowing what to do on Monday"
-          size="lg"
-          className="max-w-3xl"
-        />
+      <section className="mx-auto max-w-6xl space-y-8 px-4 py-16 sm:space-y-10 sm:px-6 sm:py-24">
+        <FadeIn whenInView>
+          <SectionHeading
+            eyebrow="Why teams switch"
+            title="Knowing your traffic dropped isn't the same as knowing what to do on Monday"
+            size="lg"
+            className="max-w-3xl"
+          />
+        </FadeIn>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <Stagger className="grid gap-4 md:grid-cols-3">
           {PROBLEMS.map((problem) => (
-            <Card key={problem.title} variant="panel">
-              <CardContent className="space-y-3">
-                <IconTile tone="neutral" size="lg">
-                  <problem.icon />
-                </IconTile>
-                <div className="eyebrow text-ink-300">{problem.eyebrow}</div>
-                <h3 className="font-display text-ink-900 text-lg font-semibold">
-                  {problem.title}
-                </h3>
-                <p className="why-line">{problem.body}</p>
-                <p className="text-opportunity text-sm font-medium">→ {problem.answer}</p>
-              </CardContent>
-            </Card>
+            <StaggerItem key={problem.title}>
+              <HoverLift className="h-full">
+                <Card variant="panel" className="h-full">
+                  <CardContent className="space-y-3">
+                    <IconTile tone="neutral" size="lg">
+                      <problem.icon />
+                    </IconTile>
+                    <div className="eyebrow text-ink-300">{problem.eyebrow}</div>
+                    <h3 className="font-display text-ink-900 text-lg font-semibold">
+                      {problem.title}
+                    </h3>
+                    <p className="why-line">{problem.body}</p>
+                    <p className="text-opportunity text-sm font-medium">→ {problem.answer}</p>
+                  </CardContent>
+                </Card>
+              </HoverLift>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       {/* --- How it works -------------------------------------------------- */}
       <section id="how-it-works" className="bg-surface-subtle border-line border-y">
-        <div className="mx-auto max-w-6xl space-y-10 px-6 py-24">
-          <SectionHeading
-            eyebrow="How it works"
-            title="Audit, then act — in one loop"
-            subtitle="No dead ends. Every finding ends in something you can publish."
-            size="lg"
-          />
+        <div className="mx-auto max-w-6xl space-y-8 px-4 py-16 sm:space-y-10 sm:px-6 sm:py-24">
+          <FadeIn whenInView>
+            <SectionHeading
+              eyebrow="How it works"
+              title="Audit, then act — in one loop"
+              subtitle="No dead ends. Every finding ends in something you can publish."
+              size="lg"
+            />
+          </FadeIn>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <Stagger className="grid gap-4 md:grid-cols-3">
             {STEPS.map((step) => (
-              <Card key={step.step} variant="panel">
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="eyebrow text-ink-900">{step.step}</span>
-                    <Badge tone="neutral" shape="pill">
-                      {step.meta}
-                    </Badge>
-                  </div>
-                  <h3 className="font-display text-ink-900 text-lg font-semibold">
-                    {step.title}
-                  </h3>
-                  <p className="why-line">{step.body}</p>
-                </CardContent>
-              </Card>
+              <StaggerItem key={step.step}>
+                <HoverLift className="h-full">
+                  <Card variant="panel" className="h-full">
+                    <CardContent className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="eyebrow text-ink-900">{step.step}</span>
+                        <Badge tone="neutral" shape="pill">
+                          {step.meta}
+                        </Badge>
+                      </div>
+                      <h3 className="font-display text-ink-900 text-lg font-semibold">
+                        {step.title}
+                      </h3>
+                      <p className="why-line">{step.body}</p>
+                    </CardContent>
+                  </Card>
+                </HoverLift>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* --- Surfaces ------------------------------------------------------ */}
-      <section id="features" className="mx-auto max-w-6xl space-y-10 px-6 py-24">
-        <SectionHeading
-          eyebrow="What you get"
-          title="Four surfaces, one loop"
-          subtitle="Each one feeds the next, so work never stops at a recommendation."
-          size="lg"
-        />
+      <section
+        id="features"
+        className="mx-auto max-w-6xl space-y-8 px-4 py-16 sm:space-y-10 sm:px-6 sm:py-24"
+      >
+        <FadeIn whenInView>
+          <SectionHeading
+            eyebrow="What you get"
+            title="Four surfaces, one loop"
+            subtitle="Each one feeds the next, so work never stops at a recommendation."
+            size="lg"
+          />
+        </FadeIn>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <Stagger className="grid gap-4 sm:grid-cols-2">
           {SURFACES.map((surface) => (
-            <Card key={surface.title} variant="panel">
-              <CardContent className="flex items-start gap-4">
-                <IconTile tone="ink" size="lg">
-                  <surface.icon />
-                </IconTile>
-                <div className="space-y-1.5">
-                  <h3 className="font-display text-ink-900 text-lg font-semibold">
-                    {surface.title}
-                  </h3>
-                  <p className="why-line">{surface.body}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <StaggerItem key={surface.title}>
+              <HoverLift className="h-full">
+                <Card variant="panel" className="h-full">
+                  <CardContent className="flex items-start gap-3 sm:gap-4">
+                    <IconTile tone="ink" size="lg">
+                      <surface.icon />
+                    </IconTile>
+                    <div className="space-y-1.5">
+                      <h3 className="font-display text-ink-900 text-lg font-semibold">
+                        {surface.title}
+                      </h3>
+                      <p className="why-line">{surface.body}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </HoverLift>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       {/* --- Pricing ------------------------------------------------------- */}
       <section id="pricing" className="bg-surface-subtle border-line border-y">
-        <div className="mx-auto max-w-6xl space-y-10 px-6 py-24">
-          <SectionHeading
-            eyebrow="Pricing"
-            title="The audit is free. You pay to publish."
-            subtitle="Every plan includes every feature — plans differ only by how much you can generate and track."
-            size="lg"
-          />
+        <div className="mx-auto max-w-6xl space-y-8 px-4 py-16 sm:space-y-10 sm:px-6 sm:py-24">
+          <FadeIn whenInView>
+            <SectionHeading
+              eyebrow="Pricing"
+              title="The audit is free. You pay to publish."
+              subtitle="Every plan includes every feature — plans differ only by how much you can generate and track."
+              size="lg"
+            />
+          </FadeIn>
 
           <PricingTable />
 
@@ -229,23 +260,25 @@ export default function LandingPage() {
       </section>
 
       {/* --- Closing CTA --------------------------------------------------- */}
-      <section className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <IconTile tone="ink" size="xl" className="mx-auto mb-6">
-          <Search />
-        </IconTile>
+      <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 sm:py-24">
+        <FadeIn whenInView>
+          <IconTile tone="ink" size="xl" className="mx-auto mb-5 sm:mb-6">
+            <Search />
+          </IconTile>
 
-        <h2 className="font-display text-ink-900 text-4xl leading-tight font-semibold tracking-tight">
-          Find out what your site is losing, before your competitor does
-        </h2>
+          <h2 className="font-display text-ink-900 text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl md:text-4xl">
+            Find out what your site is losing, before your competitor does
+          </h2>
 
-        <p className="text-ink-400 mx-auto mt-4 max-w-xl text-lg leading-relaxed">
-          Run the free audit. If the findings aren&apos;t worth acting on, you&apos;ve lost two
-          minutes and gained a shareable report.
-        </p>
+          <p className="text-ink-400 mx-auto mt-4 max-w-xl text-base leading-relaxed text-pretty sm:text-lg">
+            Run the free audit. If the findings aren&apos;t worth acting on, you&apos;ve lost two
+            minutes and gained a shareable report.
+          </p>
 
-        <div className="mx-auto mt-8 max-w-xl">
-          <AuditInput />
-        </div>
+          <div className="mx-auto mt-7 max-w-xl sm:mt-8">
+            <AuditInput />
+          </div>
+        </FadeIn>
       </section>
 
       <MarketingFooter />
