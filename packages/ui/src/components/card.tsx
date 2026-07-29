@@ -1,17 +1,60 @@
 import { cn } from "@theseosaas/ui/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
+
+/**
+ * Card, retuned to the design file.
+ *
+ * The design uses a real 1px border rather than shadcn's ring, and three
+ * distinct sizes that appear consistently:
+ *   panel — 16px radius, 26px padding, used for a whole screen section
+ *   default — 12px radius, 16px/18px padding, the standard content block
+ *   compact — 12px radius, tighter padding, for list rows
+ */
+const cardVariants = cva(
+  "group/card flex flex-col bg-card text-card-foreground border border-line",
+  {
+    variants: {
+      variant: {
+        default: "rounded-xl [--card-px:18px] [--card-py:16px]",
+        panel: "rounded-2xl [--card-px:26px] [--card-py:26px]",
+        compact: "rounded-xl [--card-px:16px] [--card-py:14px]",
+        /** Sunken well for nested content. */
+        well: "rounded-xl bg-surface-sunken border-line-soft [--card-px:16px] [--card-py:14px]",
+        /** Draws attention to an opportunity without shouting. */
+        opportunity:
+          "rounded-xl bg-opportunity-surface border-opportunity-line [--card-px:18px] [--card-py:16px]",
+      },
+      elevated: {
+        true: "shadow-[0_1px_2px_rgba(11,18,32,0.04)]",
+        false: "",
+      },
+      interactive: {
+        true: "transition-colors hover:border-line-strong cursor-pointer",
+        false: "",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      elevated: false,
+      interactive: false,
+    },
+  },
+);
 
 function Card({
   className,
-  size = "default",
+  variant,
+  elevated,
+  interactive,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & VariantProps<typeof cardVariants>) {
   return (
     <div
       data-slot="card"
-      data-size={size}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-none bg-card py-(--card-spacing) text-xs/relaxed text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-none *:[img:last-child]:rounded-none",
+        cardVariants({ variant, elevated, interactive }),
+        "gap-3 py-(--card-py)",
         className,
       )}
       {...props}
@@ -24,7 +67,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-none px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
+        "grid auto-rows-min items-start gap-1 px-(--card-px) has-data-[slot=card-action]:grid-cols-[1fr_auto]",
         className,
       )}
       {...props}
@@ -36,20 +79,21 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn(
-        "cn-font-heading text-sm font-medium group-data-[size=sm]/card:text-sm",
-        className,
-      )}
+      className={cn("font-display text-ink-900 text-lg font-semibold tracking-tight", className)}
       {...props}
     />
   );
 }
 
+/**
+ * The "why it matters" line. Per the UX spec this is not optional decoration —
+ * a card showing a finding without one is a bug.
+ */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-xs/relaxed text-muted-foreground", className)}
+      className={cn("text-ink-400 text-sm leading-relaxed", className)}
       {...props}
     />
   );
@@ -66,19 +110,29 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div data-slot="card-content" className={cn("px-(--card-spacing)", className)} {...props} />
-  );
+  return <div data-slot="card-content" className={cn("px-(--card-px)", className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("flex items-center rounded-none border-t p-(--card-spacing)", className)}
+      className={cn(
+        "border-line mt-1 flex items-center gap-2 border-t px-(--card-px) pt-3",
+        className,
+      )}
       {...props}
     />
   );
 }
 
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent };
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+  cardVariants,
+};
