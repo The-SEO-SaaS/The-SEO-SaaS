@@ -43,7 +43,7 @@ function Stat({
         <span
           className={cn(
             "font-display text-ink-900 leading-none font-semibold tabular-nums",
-            size === "lg" ? "text-5xl" : "text-3xl",
+            size === "lg" ? "text-4xl sm:text-5xl" : "text-2xl sm:text-3xl",
           )}
         >
           {value}

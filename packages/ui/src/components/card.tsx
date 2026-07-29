@@ -15,15 +15,17 @@ const cardVariants = cva(
   "group/card flex flex-col bg-card text-card-foreground border border-line",
   {
     variants: {
+      // Padding tightens on small screens — the design's 26px panel inset
+      // eats most of a 375px viewport.
       variant: {
-        default: "rounded-xl [--card-px:18px] [--card-py:16px]",
-        panel: "rounded-2xl [--card-px:26px] [--card-py:26px]",
-        compact: "rounded-xl [--card-px:16px] [--card-py:14px]",
+        default: "rounded-xl [--card-px:16px] [--card-py:14px] sm:[--card-px:18px] sm:[--card-py:16px]",
+        panel: "rounded-2xl [--card-px:18px] [--card-py:18px] sm:[--card-px:26px] sm:[--card-py:26px]",
+        compact: "rounded-xl [--card-px:14px] [--card-py:12px] sm:[--card-px:16px] sm:[--card-py:14px]",
         /** Sunken well for nested content. */
-        well: "rounded-xl bg-surface-sunken border-line-soft [--card-px:16px] [--card-py:14px]",
+        well: "rounded-xl bg-surface-sunken border-line-soft [--card-px:14px] [--card-py:12px] sm:[--card-px:16px] sm:[--card-py:14px]",
         /** Draws attention to an opportunity without shouting. */
         opportunity:
-          "rounded-xl bg-opportunity-surface border-opportunity-line [--card-px:18px] [--card-py:16px]",
+          "rounded-xl bg-opportunity-surface border-opportunity-line [--card-px:16px] [--card-py:14px] sm:[--card-px:18px] sm:[--card-py:16px]",
       },
       elevated: {
         true: "shadow-[0_1px_2px_rgba(11,18,32,0.04)]",

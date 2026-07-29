@@ -38,7 +38,11 @@ function SectionHeading({
   return (
     <div
       data-slot="section-heading"
-      className={cn("flex items-start justify-between gap-4", className)}
+      className={cn(
+        // Stacks below sm so a long title and its action don't fight for width.
+        "flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-start sm:gap-4",
+        className,
+      )}
       {...props}
     >
       <div className="min-w-0 space-y-1.5">
@@ -48,8 +52,8 @@ function SectionHeading({
 
         <h2
           className={cn(
-            "font-display text-ink-900 font-semibold tracking-tight",
-            size === "lg" ? "text-3xl" : "text-xl",
+            "font-display text-ink-900 font-semibold tracking-tight text-balance",
+            size === "lg" ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl",
           )}
         >
           {title}
@@ -58,7 +62,7 @@ function SectionHeading({
         {subtitle ? <p className="why-line max-w-[62ch]">{subtitle}</p> : null}
       </div>
 
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="shrink-0 self-stretch sm:self-auto">{action}</div> : null}
     </div>
   );
 }
