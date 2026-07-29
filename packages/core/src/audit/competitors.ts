@@ -1,5 +1,4 @@
 import { mapWithConcurrency, settle } from "../util/async.js";
-import { safeHostname } from "../util/domain.js";
 import { search } from "../search/serpex.js";
 
 /**

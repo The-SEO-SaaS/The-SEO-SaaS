@@ -4,7 +4,7 @@ import { Badge } from "@theseosaas/ui/components/badge";
 import { Button } from "@theseosaas/ui/components/button";
 import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
-import { FadeIn, HoverLift, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
+import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { SectionHeading } from "@theseosaas/ui/components/section-heading";
 import { ArrowUpRight, Check, FileText, Lock, Sparkles } from "lucide-react";
 
