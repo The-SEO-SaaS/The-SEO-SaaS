@@ -1,0 +1,28 @@
+{
+  "name": "@theseosaas/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./ai": "./src/ai/index.ts",
+    "./search": "./src/search/index.ts",
+    "./queue": "./src/queue/index.ts",
+    "./billing": "./src/billing/index.ts",
+    "./http": "./src/http/index.ts",
+    "./util": "./src/util/index.ts"
+  },
+  "dependencies": {
+    "@theseosaas/db": "workspace:*",
+    "@theseosaas/env": "workspace:*",
+    "nodemailer": "^7.0.9",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@theseosaas/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "@types/nodemailer": "^7.0.5",
+    "typescript": "catalog:"
+  }
+}
