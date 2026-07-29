@@ -4,8 +4,8 @@ import { Badge } from "@theseosaas/ui/components/badge";
 import { Button } from "@theseosaas/ui/components/button";
 import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
+import { FadeIn, HoverLift, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { SectionHeading } from "@theseosaas/ui/components/section-heading";
-import { cn } from "@theseosaas/ui/lib/utils";
 import { ArrowUpRight, Check, FileText, Lock, Sparkles } from "lucide-react";
 
 import type {
@@ -34,47 +34,53 @@ export function FindingsSection({ issues }: { issues: AuditIssue[] }) {
 
   return (
     <section className="space-y-5">
-      <SectionHeading
-        eyebrow="What I'd fix first"
-        title="Ordered by impact, not by category"
-        subtitle="The first three are the ones costing you traffic today. Everything below them can wait a week without hurting."
-      />
+      <FadeIn whenInView>
+        <SectionHeading
+          eyebrow="What I'd fix first"
+          title="Ordered by impact, not by category"
+          subtitle="The first three are the ones costing you traffic today. Everything below them can wait a week without hurting."
+        />
+      </FadeIn>
 
-      <div className="space-y-2.5">
+      <Stagger className="space-y-2.5">
         {issues.map((issue) => {
           const severity = SEVERITY[issue.severity];
 
           return (
-            <Card key={issue.id} variant="default" className="gap-2.5">
-              <CardContent className="space-y-2.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-display text-ink-900 text-md font-semibold">
-                    {issue.title}
-                  </h3>
-                  <Badge tone={severity.tone}>{severity.label}</Badge>
-                </div>
-
-                <p className="why-line">{issue.whyItMatters}</p>
-
-                {issue.howToFix ? (
-                  <p className="text-ink-500 text-sm">
-                    <span className="text-ink-700 font-medium">Fix:</span> {issue.howToFix}
-                  </p>
-                ) : null}
-
-                {issue.affectedUrls.length > 0 ? (
-                  <div className="text-ink-300 truncate font-mono text-xs">
-                    {issue.affectedUrls[0]}
-                    {issue.affectedUrls.length > 1
-                      ? ` +${issue.affectedUrls.length - 1} more`
-                      : ""}
+            <StaggerItem key={issue.id}>
+              <Card variant="default" className="gap-2.5">
+                <CardContent className="space-y-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-ink-900 text-md font-semibold">
+                      {issue.title}
+                    </h3>
+                    <Badge tone={severity.tone}>{severity.label}</Badge>
                   </div>
-                ) : null}
-              </CardContent>
-            </Card>
+
+                  <p className="why-line">{issue.whyItMatters}</p>
+
+                  {issue.howToFix ? (
+                    <p className="text-ink-500 text-sm">
+                      <span className="text-ink-700 font-medium">Fix:</span> {issue.howToFix}
+                    </p>
+                  ) : null}
+
+                  {issue.affectedUrls.length > 0 ? (
+                    // break-all so a long URL wraps instead of forcing the
+                    // whole card to scroll horizontally on a phone.
+                    <div className="text-ink-300 font-mono text-xs break-all">
+                      {issue.affectedUrls[0]}
+                      {issue.affectedUrls.length > 1
+                        ? ` +${issue.affectedUrls.length - 1} more`
+                        : ""}
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </StaggerItem>
           );
         })}
-      </div>
+      </Stagger>
     </section>
   );
 }
@@ -112,16 +118,19 @@ export function CompetitorsSection({
 
   return (
     <section className="space-y-5">
-      <SectionHeading
-        eyebrow="Competitors"
-        eyebrowTone="opportunity"
-        title="These sites are winning traffic you want"
-        subtitle={`They rank for the same searches ${domain} should own. Here's the strongest piece of content each one has published.`}
-      />
+      <FadeIn whenInView>
+        <SectionHeading
+          eyebrow="Competitors"
+          eyebrowTone="opportunity"
+          title="These sites are winning traffic you want"
+          subtitle={`They rank for the same searches ${domain} should own. Here's the strongest piece of content each one has published.`}
+        />
+      </FadeIn>
 
-      <div className="grid gap-2.5 md:grid-cols-3">
+      <Stagger className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
         {competitors.map((competitor) => (
-          <Card key={competitor.id} variant="default" className="gap-3">
+          <StaggerItem key={competitor.id} className="h-full">
+          <Card variant="default" className="h-full gap-3">
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2.5">
                 <IconTile tone="neutral" size="sm">
@@ -152,8 +161,9 @@ export function CompetitorsSection({
               )}
             </CardContent>
           </Card>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </section>
   );
 }
@@ -169,12 +179,14 @@ export function KeywordsSection({
 
   return (
     <section className="space-y-5">
-      <SectionHeading
-        eyebrow="Missing keywords"
-        eyebrowTone="opportunity"
-        title={headline ?? `You're missing ${keywords.length} buying-intent searches`}
-        subtitle="People looking for software like yours are searching these terms and finding your competitors instead."
-      />
+      <FadeIn whenInView>
+        <SectionHeading
+          eyebrow="Missing keywords"
+          eyebrowTone="opportunity"
+          title={headline ?? `You're missing ${keywords.length} buying-intent searches`}
+          subtitle="People looking for software like yours are searching these terms and finding your competitors instead."
+        />
+      </FadeIn>
 
       <Card variant="default">
         <CardContent className="divide-line divide-y">
@@ -227,18 +239,23 @@ export function OpportunitiesSection({
 
   return (
     <section className="space-y-5">
-      <SectionHeading
-        eyebrow="What to build"
-        eyebrowTone="opportunity"
-        title="Pages that would close the gap"
-        subtitle="Each of these targets a search your competitors currently own. We can write them for you."
-      />
+      <FadeIn whenInView>
+        <SectionHeading
+          eyebrow="What to build"
+          eyebrowTone="opportunity"
+          title="Pages that would close the gap"
+          subtitle="Each of these targets a search your competitors currently own. We can write them for you."
+        />
+      </FadeIn>
 
-      <div className="space-y-2.5">
+      <Stagger className="space-y-2.5">
         {opportunities.map((opportunity) => (
-          <Card key={opportunity.id} variant="default" className="gap-3">
+          <StaggerItem key={opportunity.id}>
+          <Card variant="default" className="gap-3">
             <CardContent className="space-y-3">
-              <div className="flex items-start justify-between gap-4">
+              {/* Stacks below sm — a title and a Generate button side by side
+                  squeezes both on a phone. */}
+              <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <IconTile tone="opportunity" size="sm">
@@ -260,7 +277,7 @@ export function OpportunitiesSection({
                     size="sm"
                     variant="opportunity"
                     onClick={() => onGenerate(opportunity.id)}
-                    className="shrink-0"
+                    className="w-full shrink-0 sm:w-auto"
                   >
                     <Sparkles />
                     Generate
@@ -279,8 +296,9 @@ export function OpportunitiesSection({
               ) : null}
             </CardContent>
           </Card>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </section>
   );
 }
@@ -309,27 +327,29 @@ export function UnlockSection({
   if (parts.length === 0) return null;
 
   return (
-    <Card variant="opportunity" elevated>
-      <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <IconTile tone="opportunity" size="sm">
-              <Lock />
-            </IconTile>
-            <h3 className="font-display text-ink-900 text-md font-semibold">
-              {parts.join(", ")}
-            </h3>
+    <FadeIn whenInView>
+      <Card variant="opportunity" elevated>
+        <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1.5">
+            <div className="flex items-start gap-2">
+              <IconTile tone="opportunity" size="sm" className="mt-0.5">
+                <Lock />
+              </IconTile>
+              <h3 className="font-display text-ink-900 text-md font-semibold text-balance">
+                {parts.join(", ")}
+              </h3>
+            </div>
+            <p className="text-ink-500 max-w-[60ch] text-sm leading-relaxed">
+              A plan unlocks the full list for {domain}, the complete competitor breakdown, and
+              article drafts generated from every gap above. From $49.99 a month.
+            </p>
           </div>
-          <p className="text-ink-500 max-w-[60ch] text-sm leading-relaxed">
-            A plan unlocks the full list for {domain}, the complete competitor breakdown, and
-            article drafts generated from every gap above. From $49.99 a month.
-          </p>
-        </div>
 
-        <Button onClick={onSeePlans} className="shrink-0">
-          See plans
-        </Button>
-      </CardContent>
-    </Card>
+          <Button onClick={onSeePlans} className="w-full shrink-0 sm:w-auto">
+            See plans
+          </Button>
+        </CardContent>
+      </Card>
+    </FadeIn>
   );
 }

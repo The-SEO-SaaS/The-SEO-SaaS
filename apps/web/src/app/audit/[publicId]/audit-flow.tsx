@@ -3,6 +3,7 @@
 import { Button } from "@theseosaas/ui/components/button";
 import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
+import { FadeIn, PhaseTransition } from "@theseosaas/ui/components/motion";
 import { ProgressBar } from "@theseosaas/ui/components/progress-bar";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
@@ -42,7 +43,7 @@ export function AuditFlow({ publicId }: { publicId: string }) {
     return (
       <>
         <AuditHeader />
-        <main className="mx-auto max-w-lg px-6 py-24">
+        <main className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
           <Card variant="panel" className="text-center">
             <CardContent className="space-y-4">
               <IconTile tone="critical" size="lg" className="mx-auto">
@@ -68,26 +69,28 @@ export function AuditFlow({ publicId }: { publicId: string }) {
     return (
       <>
         <AuditHeader />
-        <main className="mx-auto max-w-lg px-6 py-20">
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <div className="eyebrow text-ink-300">Crawl in progress</div>
-              <h1 className="font-display text-ink-900 text-3xl font-semibold tracking-tight">
-                Auditing your site
-              </h1>
-              <p className="why-line">
-                This takes a couple of minutes. We&apos;re reading your pages, checking the
-                technical basics, and working out who you&apos;re really competing with.
-              </p>
+        <main className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-20">
+          <PhaseTransition phaseKey="running">
+            <div className="space-y-7 sm:space-y-8">
+              <FadeIn className="space-y-2">
+                <div className="eyebrow text-ink-300">Crawl in progress</div>
+                <h1 className="font-display text-ink-900 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Auditing your site
+                </h1>
+                <p className="why-line">
+                  This takes a couple of minutes. We&apos;re reading your pages, checking the
+                  technical basics, and working out who you&apos;re really competing with.
+                </p>
+              </FadeIn>
+
+              <ProgressBar value={progress?.progress ?? 0} tone="ink" />
+
+              <CrawlChecklist
+                currentStep={progress?.currentStep ?? null}
+                progress={progress?.progress ?? 0}
+              />
             </div>
-
-            <ProgressBar value={progress?.progress ?? 0} tone="ink" />
-
-            <CrawlChecklist
-              currentStep={progress?.currentStep ?? null}
-              progress={progress?.progress ?? 0}
-            />
-          </div>
+          </PhaseTransition>
         </main>
       </>
     );
@@ -97,8 +100,10 @@ export function AuditFlow({ publicId }: { publicId: string }) {
     return (
       <>
         <AuditHeader />
-        <main className="mx-auto max-w-lg px-6 py-24">
-          <EmailGate publicId={publicId} onContinue={passGate} />
+        <main className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
+          <PhaseTransition phaseKey="email-gate">
+            <EmailGate publicId={publicId} onContinue={passGate} />
+          </PhaseTransition>
         </main>
       </>
     );
@@ -119,30 +124,34 @@ export function AuditFlow({ publicId }: { publicId: string }) {
     <>
       <AuditHeader shareUrl={shareUrl} />
 
-      <main className="mx-auto max-w-5xl space-y-12 px-6 py-12">
-        <ReportMeta
-          domain={report.domain}
-          completedAt={report.completedAt}
-          pagesCrawled={report.pagesCrawled}
-        />
+      <main className="mx-auto max-w-5xl space-y-10 px-4 py-10 sm:space-y-12 sm:px-6 sm:py-12">
+        <FadeIn>
+          <ReportMeta
+            domain={report.domain}
+            completedAt={report.completedAt}
+            pagesCrawled={report.pagesCrawled}
+          />
+        </FadeIn>
 
-        <Card variant="panel">
-          <CardContent className="space-y-8">
-            <ScorePanel
-              score={report.score ?? 0}
-              band={report.band}
-              counts={report.counts}
-            />
-
-            <div className="border-line border-t pt-8">
-              <ScoreVerdict
+        <FadeIn delay={0.08}>
+          <Card variant="panel">
+            <CardContent className="space-y-6 sm:space-y-8">
+              <ScorePanel
                 score={report.score ?? 0}
-                technicalHealth={report.technicalHealth}
-                summary={report.summary}
+                band={report.band}
+                counts={report.counts}
               />
-            </div>
-          </CardContent>
-        </Card>
+
+              <div className="border-line border-t pt-6 sm:pt-8">
+                <ScoreVerdict
+                  score={report.score ?? 0}
+                  technicalHealth={report.technicalHealth}
+                  summary={report.summary}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </FadeIn>
 
         <FindingsSection issues={report.issues} />
         <HealthySection healthy={report.healthy} />

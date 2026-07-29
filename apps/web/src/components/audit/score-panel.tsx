@@ -1,5 +1,6 @@
 "use client";
 
+import { CountUp } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
 
 import type { AuditReport } from "@/lib/api";
@@ -35,15 +36,17 @@ export function ScorePanel({ score, band, counts, className }: ScorePanelProps) 
   const resolvedBand = band ?? (score >= 75 ? "GOOD" : score >= 50 ? "FAIR" : "POOR");
 
   return (
-    <div className={cn("grid gap-8 sm:grid-cols-[auto_1fr]", className)}>
+    <div className={cn("grid gap-6 sm:grid-cols-[auto_1fr] sm:gap-8", className)}>
       <div className="space-y-3">
         <div className="eyebrow text-ink-300">SEO score</div>
 
         <div className="flex items-baseline gap-1.5">
-          <span className="font-display text-ink-900 text-5xl leading-none font-semibold tabular-nums">
-            {score}
+          <span className="font-display text-ink-900 text-4xl leading-none font-semibold sm:text-5xl">
+            {/* Counts up — the score lands as an arrival rather than a number
+                that was simply always sitting there. */}
+            <CountUp value={score} />
           </span>
-          <span className="text-ink-300 text-lg">/ 100</span>
+          <span className="text-ink-300 text-base sm:text-lg">/ 100</span>
         </div>
 
         <div className={cn("text-sm font-semibold uppercase", BAND_TONE[resolvedBand])}>

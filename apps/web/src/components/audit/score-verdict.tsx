@@ -42,20 +42,11 @@ export function ScoreVerdict({
 
   return (
     <div className={cn("space-y-5", className)}>
-      <div className="flex items-start gap-6">
-        <div className="shrink-0">
-          <div className="font-display text-ink-900 text-5xl leading-none font-semibold tabular-nums">
-            {score}
-          </div>
-          <div className="text-ink-300 text-2xs mt-1.5 font-semibold tracking-[0.09em] uppercase">
-            SEO score
-          </div>
-        </div>
-
-        <p className="text-ink-700 max-w-[52ch] text-lg leading-relaxed">
-          {summary ?? fallbackVerdict(score)}
-        </p>
-      </div>
+      {/* The number already appears in ScorePanel above, so this block leads
+          with the verdict sentence — repeating the score would bury it. */}
+      <p className="text-ink-700 max-w-[52ch] text-base leading-relaxed text-pretty sm:text-lg">
+        {summary ?? fallbackVerdict(score)}
+      </p>
 
       <div className="space-y-3">
         <div className="space-y-1.5">
