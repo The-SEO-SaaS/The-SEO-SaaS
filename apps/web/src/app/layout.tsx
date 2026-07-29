@@ -1,23 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Instrument_Sans, Inter } from "next/font/google";
 
 import "../index.css";
-import Header from "@/components/header";
 import Providers from "@/components/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/**
+ * Fonts match the design file: Instrument Sans for display/headings, Inter for
+ * body. Loaded via next/font so they self-host and don't flash on first paint.
+ */
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "theseosaas",
-  description: "theseosaas",
+  title: "TheSEOSaaS — Your AI SEO Growth Team",
+  description:
+    "We don't just tell you how to improve your SEO — we build the assets that grow your traffic.",
 };
 
 export default function RootLayout({
@@ -26,14 +33,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
-        </Providers>
+    // No suppressHydrationWarning: with no theme provider there is no
+    // server/client class mismatch to suppress.
+    <html lang="en">
+      <body className={`${inter.variable} ${instrumentSans.variable} antialiased`}>
+        {/* No global header — marketing pages and the app shell have different
+            chrome, so each route group brings its own. */}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

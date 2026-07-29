@@ -1,11 +1,7 @@
-"use client";
-
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import * as React from "react";
-
-export function ThemeProvider({
-  children,
-  ...props
-}: React.ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
-}
+/**
+ * Intentionally empty — see mode-toggle.tsx.
+ *
+ * v0.1 ships light mode only, so next-themes is not wired up. Providers.tsx
+ * renders children directly.
+ */
+export {};
