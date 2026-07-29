@@ -97,7 +97,9 @@ export async function requestMagicLink(
     },
   });
 
-  const url = new URL("/auth/magic", env.APP_URL);
+  // Points straight at the API route, which consumes the token and redirects.
+  // A visible page in between would only add a hop for the user to watch.
+  const url = new URL("/api/auth/magic-link/consume", env.APP_URL);
   url.searchParams.set("token", token);
 
   await sendMagicLinkEmail({
