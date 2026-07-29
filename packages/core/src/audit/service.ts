@@ -147,11 +147,28 @@ interface RawKeyword {
 }
 
 /**
- * The full report.
+ * Free-tier limits on the public report.
+ *
+ * The split is breadth over volume: an anonymous visitor sees every *kind* of
+ * finding — score, top issues, competitors, a sample of opportunities — but not
+ * the full list. That keeps the shared link genuinely useful, which is what
+ * makes it worth passing around, while leaving something to sell.
+ */
+const FREE_ISSUE_LIMIT = 5;
+const FREE_COMPETITOR_LIMIT = 3;
+const FREE_OPPORTUNITY_LIMIT = 3;
+const FREE_KEYWORD_LIMIT = 10;
+
+/**
+ * The report.
  *
  * Public by design — a shared /audit/[publicId] link must render for someone
  * with no account, since that is the entire distribution strategy. `viewerId`
- * only decides whether we show the claim CTA.
+ * decides whether the full list is returned or the free slice plus counts of
+ * what's held back.
+ *
+ * Withheld rows are never sent and then hidden client-side: that would leak the
+ * paid content to anyone opening devtools.
  */
 export async function getAuditReport(publicId: string, viewerId?: string | null) {
   const audit = await prisma.audit.findUnique({
@@ -166,6 +183,8 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
       summary: true,
       rawData: true,
       userId: true,
+      issueCount: true,
+      pagesCrawled: true,
       createdAt: true,
       completedAt: true,
       issues: {
@@ -198,7 +217,26 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     competitors?: RawCompetitor[];
     keywords?: RawKeyword[];
     keywordHeadline?: string | null;
+    band?: "POOR" | "FAIR" | "GOOD";
+    counts?: { critical: number; warning: number; notice: number };
+    healthy?: string[];
+    crawl?: { pagesCrawled?: number; pagesDiscovered?: number };
   };
+
+  const isOwner = Boolean(viewerId && audit.userId === viewerId);
+
+  const allCompetitors = raw.competitors ?? [];
+  const allKeywords = raw.keywords ?? [];
+
+  // Owners see everything; anonymous viewers get the free slice.
+  const issues = isOwner ? audit.issues : audit.issues.slice(0, FREE_ISSUE_LIMIT);
+  const competitors = isOwner
+    ? allCompetitors
+    : allCompetitors.slice(0, FREE_COMPETITOR_LIMIT);
+  const opportunities = isOwner
+    ? audit.opportunities
+    : audit.opportunities.slice(0, FREE_OPPORTUNITY_LIMIT);
+  const keywordGaps = isOwner ? allKeywords : allKeywords.slice(0, FREE_KEYWORD_LIMIT);
 
   return {
     id: audit.id,
@@ -207,12 +245,16 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     status: audit.status,
     score: audit.score,
     technicalHealth: audit.technicalHealth,
+    band: raw.band ?? null,
     summary: audit.summary,
 
-    // The spec caps the report at the top issues — a full dump paralyses.
-    issues: audit.issues.slice(0, 5),
+    pagesCrawled: audit.pagesCrawled || raw.crawl?.pagesCrawled || 0,
+    pagesDiscovered: raw.crawl?.pagesDiscovered ?? 0,
+    counts: raw.counts ?? { critical: 0, warning: 0, notice: 0 },
+    healthy: raw.healthy ?? [],
 
-    competitors: (raw.competitors ?? []).map((competitor) => ({
+    issues,
+    competitors: competitors.map((competitor) => ({
       id: competitor.domain,
       domain: competitor.domain,
       name: competitor.name,
@@ -221,12 +263,22 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
         ? { ...competitor.bestPage, whyItMatters: null }
         : null,
     })),
-
-    opportunities: audit.opportunities,
-    keywordGaps: raw.keywords ?? [],
+    opportunities,
+    keywordGaps,
     keywordHeadline: raw.keywordHeadline ?? null,
 
-    isOwner: Boolean(viewerId && audit.userId === viewerId),
+    /**
+     * What's held back. The report states these honestly rather than hiding
+     * that more exists — "38 more findings" is the actual sales argument.
+     */
+    locked: {
+      isLocked: !isOwner,
+      issues: Math.max(0, audit.issueCount - issues.length),
+      opportunities: Math.max(0, audit.opportunities.length - opportunities.length),
+      keywords: Math.max(0, allKeywords.length - keywordGaps.length),
+    },
+
+    isOwner,
     createdAt: audit.createdAt.toISOString(),
     completedAt: audit.completedAt?.toISOString() ?? null,
   };
