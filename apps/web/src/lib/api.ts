@@ -172,6 +172,68 @@ export const authApi = {
     `/api/auth/google${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`,
 };
 
+// --- Onboarding ------------------------------------------------------------
+
+export type OnboardingStepKey = "site" | "competitors" | "keywords" | "plan";
+export type SiteType = "SAAS" | "ECOMMERCE" | "CONTENT" | "LOCAL";
+export type SitePlatform = "SHOPIFY" | "WORDPRESS" | "WEBFLOW" | "NEXTJS" | "OTHER";
+
+export interface OnboardingCompetitor {
+  id: string;
+  domain: string;
+  name: string | null;
+  notes: string | null;
+  sharedTerms: number;
+  selected: boolean;
+}
+
+export interface OnboardingKeyword {
+  id: string;
+  term: string;
+  intent: KeywordGap["intent"];
+  rationale: string | null;
+  selected: boolean;
+}
+
+export interface OnboardingState {
+  isComplete: boolean;
+  currentStep: OnboardingStepKey;
+  project: {
+    id: string;
+    domain: string;
+    name: string;
+    siteType: SiteType | null;
+    platform: SitePlatform | null;
+    pagesCrawled: number;
+  } | null;
+  competitors: OnboardingCompetitor[];
+  keywords: OnboardingKeyword[];
+  plan: "STARTER" | "GROWTH" | "SCALE" | null;
+  limits: { competitors: number; keywords: number } | null;
+}
+
+export const onboardingApi = {
+  state: (signal?: AbortSignal) =>
+    http.get<OnboardingState>("/onboarding", { signal }),
+
+  saveSite: (input: {
+    domain: string;
+    name?: string;
+    siteType: SiteType;
+    platform?: SitePlatform;
+  }) => http.post<{ projectId: string }>("/onboarding/site", input),
+
+  saveCompetitors: (input: { projectId: string; domains: string[] }) =>
+    http.post<{ saved: number }>("/onboarding/competitors", input),
+
+  saveKeywords: (input: {
+    projectId: string;
+    terms: { term: string; intent?: KeywordGap["intent"]; rationale?: string }[];
+  }) => http.post<{ tracked: number }>("/onboarding/keywords", input),
+
+  complete: () => http.post<{ ok: true }>("/onboarding/complete"),
+};
+
 export const contentApi = {
   generate: (opportunityId: string) =>
     http.post<{ contentId: string; jobId: string }>("/content/generate", { opportunityId }),
