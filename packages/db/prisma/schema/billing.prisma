@@ -1,0 +1,79 @@
+// ---------------------------------------------------------------------------
+// Billing — Dodo Payments. Every plan has every feature; plans differ only by
+// limits, so entitlements are numeric quotas rather than feature flags.
+// ---------------------------------------------------------------------------
+
+enum Plan {
+  STARTER
+  GROWTH
+  SCALE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+  INCOMPLETE
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan   Plan
+  status SubscriptionStatus @default(INCOMPLETE)
+
+  dodoCustomerId     String?
+  dodoSubscriptionId String? @unique
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+enum UsageMetric {
+  AUDIT
+  AI_BLOG_POST
+  AI_RECOMMENDATION
+}
+
+/// One row per user / metric / billing period. Incremented atomically before
+/// a paid action runs, so a quota can never be exceeded by concurrent requests.
+model UsageRecord {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  metric      UsageMetric
+  amount      Int         @default(0)
+  periodStart DateTime
+  periodEnd   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, metric, periodStart])
+  @@index([userId, periodStart])
+}
+
+/// Idempotency guard for Dodo webhooks — providers retry, we must not
+/// double-apply a plan change.
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String
+  type        String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, eventId])
+}
