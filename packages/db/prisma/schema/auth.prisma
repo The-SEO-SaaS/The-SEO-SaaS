@@ -1,0 +1,118 @@
+// ---------------------------------------------------------------------------
+// Auth — hand-rolled. No auth framework/library anywhere in this app.
+//
+// There are NO passwords. Sign-in is Google OAuth or an emailed magic link.
+// Both paths converge on the same opaque server-side session: only the
+// SHA-256 hash of a session token is persisted, so a DB leak cannot be
+// replayed as a valid session.
+// ---------------------------------------------------------------------------
+
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+  image String?
+
+  /// Set the moment a user proves control of the address — true for Google
+  /// sign-in (Google asserts it) and for a consumed magic link.
+  emailVerifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  authTokens   AuthToken[]
+  projects     Project[]
+  audits       Audit[]
+  subscription Subscription?
+  usageRecords UsageRecord[]
+
+  @@index([createdAt])
+}
+
+/// A linked external identity. One row per provider per user, so the same
+/// person signing in with Google and then a magic link stays one account.
+model Account {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// "google" today. Kept as a string so adding a provider needs no migration.
+  provider          String
+  providerAccountId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id String @id @default(cuid())
+
+  /// SHA-256 hex digest of the opaque session token. The raw token is
+  /// returned to the client exactly once and never stored.
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt  DateTime
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  ipAddress String?
+  userAgent String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum AuthTokenType {
+  MAGIC_LINK
+}
+
+/// Single-use, short-lived sign-in tokens delivered by email. Stored hashed,
+/// consumed atomically, and never reissued without invalidating the previous
+/// outstanding token.
+model AuthToken {
+  id        String        @id @default(cuid())
+  tokenHash String        @unique
+  type      AuthTokenType @default(MAGIC_LINK)
+
+  /// Null when the link is for an address that has no account yet — the user
+  /// is created on consumption.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  email String
+
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  /// Where to send the user after a successful sign-in, e.g. back to the
+  /// audit report they were reading when they hit the paywall.
+  redirectTo String?
+
+  requestIp String?
+
+  @@index([email, type])
+  @@index([expiresAt])
+}
+
+/// Postgres-backed fixed-window rate limiter. Protects the anonymous free
+/// audit (which costs real money per run) and magic-link sending (which is an
+/// email-spam vector if left open).
+model RateLimit {
+  id          String   @id @default(cuid())
+  bucket      String
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+
+  @@unique([bucket, windowStart])
+  @@index([expiresAt])
+}
