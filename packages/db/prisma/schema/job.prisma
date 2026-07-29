@@ -1,0 +1,67 @@
+// ---------------------------------------------------------------------------
+// Job — the Postgres-backed work queue. No external broker, no extra vendor.
+// Claiming uses SELECT ... FOR UPDATE SKIP LOCKED, which is the standard
+// Postgres primitive for safe multi-worker dequeue.
+//
+// One generic queue serves every long-running job type (audits today, blog
+// generation next), and carries progress fields so the audit checklist loader
+// can be driven straight off the row.
+// ---------------------------------------------------------------------------
+
+enum JobStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+model Job {
+  id String @id @default(cuid())
+
+  /// Dot-namespaced handler key, e.g. "audit.run" or "content.generate".
+  type    String
+  payload Json
+
+  status   JobStatus @default(PENDING)
+  /// Higher runs first. Paid work should outrank anonymous free audits.
+  priority Int       @default(0)
+
+  progress      Int     @default(0)
+  progressLabel String?
+
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3)
+  /// Visibility timeout: a job is eligible once now() >= runAfter.
+  runAfter    DateTime @default(now())
+
+  lockedAt DateTime?
+  lockedBy String?
+
+  lastError String?
+  result    Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@index([status, runAfter, priority])
+  @@index([type, status])
+  @@index([lockedAt])
+}
+
+/// Cache for Serpex responses. Search is the dominant per-audit cost, and the
+/// spec targets aggressive caching to hold audits at ~$0.05–$0.20.
+model SearchCache {
+  id       String @id @default(cuid())
+  cacheKey String @unique
+  provider String @default("serpex")
+
+  payload   Json
+  expiresAt DateTime
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
