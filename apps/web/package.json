@@ -10,8 +10,10 @@
   "dependencies": {
     "@prisma/client": "catalog:",
     "@swc/helpers": "^0.5.23",
+    "@theseosaas/core": "workspace:*",
     "@theseosaas/env": "workspace:*",
     "@theseosaas/ui": "workspace:*",
+    "axios": "^1.14.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "catalog:",
     "lucide-react": "catalog:",
