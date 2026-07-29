@@ -8,14 +8,18 @@ import * as React from "react";
 /**
  * Chrome shared by every onboarding step.
  *
- * The design has five steps plus a done screen: site → voice → competitors →
- * keywords → plan. Progress is always visible because a flow that shows its
- * length feels shorter than one that doesn't, and each step carries its own
- * "why" line so the user knows what a question buys them.
+ * Four steps plus a done screen: site → competitors → keywords → plan.
+ *
+ * The design file also has a "voice" step (brand voice capture, feeding the
+ * content generation prompts). Deferred to v0.2 — it only pays off once blog
+ * generation is tuned enough for voice to measurably change the output, and
+ * every extra step before the plan screen costs conversion.
+ *
+ * Progress stays visible because a flow that shows its length feels shorter
+ * than one that hides it.
  */
 export const ONBOARDING_STEPS = [
   { key: "site", label: "Site" },
-  { key: "voice", label: "Voice" },
   { key: "competitors", label: "Competitors" },
   { key: "keywords", label: "Keywords" },
   { key: "plan", label: "Plan" },
