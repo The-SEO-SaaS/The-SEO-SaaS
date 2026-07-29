@@ -23,7 +23,8 @@ import {
 } from "@/components/audit/report-sections";
 import { ScorePanel } from "@/components/audit/score-panel";
 import { ScoreVerdict } from "@/components/audit/score-verdict";
-import { useAuditFlow } from "@/hooks/use-audit";
+import { useAuditFlow, useClaimAudit } from "@/hooks/use-audit";
+import { useSession } from "@/hooks/use-session";
 
 /**
  * The three-phase audit screen: crawling → email gate → report.
@@ -35,9 +36,20 @@ import { useAuditFlow } from "@/hooks/use-audit";
 export function AuditFlow({ publicId }: { publicId: string }) {
   const router = useRouter();
   const { phase, progress, report, error, gaveUp, passGate } = useAuditFlow(publicId);
+  const { isSignedIn } = useSession();
+  const { claim, isClaiming } = useClaimAudit(publicId);
 
   const shareUrl =
     typeof window !== "undefined" ? `${window.location.origin}/audit/${publicId}` : undefined;
+
+  /**
+   * Anonymous visitors go to sign-in carrying this report as the return
+   * destination, so they land back here after authenticating rather than on a
+   * dashboard with no memory of what they were reading.
+   */
+  const goToSignIn = React.useCallback(() => {
+    router.push(`/login?redirectTo=${encodeURIComponent(`/audit/${publicId}`)}`);
+  }, [router, publicId]);
 
   if (phase === "failed" || gaveUp) {
     return (
@@ -161,16 +173,22 @@ export function AuditFlow({ publicId }: { publicId: string }) {
 
         <OpportunitiesSection
           opportunities={report.opportunities}
-          // Generation requires an account and a plan, so an anonymous viewer
-          // is routed to pricing rather than shown a button that fails.
-          onGenerate={report.isOwner ? undefined : () => router.push("/#pricing")}
+          // Generation needs an account and a plan. Rather than show a button
+          // that fails, an anonymous viewer is routed into sign-in and a
+          // signed-in non-owner is offered the claim path.
+          onGenerate={
+            report.isOwner ? undefined : isSignedIn ? () => claim() : goToSignIn
+          }
         />
 
         {report.locked.isLocked ? (
           <UnlockSection
             domain={report.domain}
             locked={report.locked}
-            onSeePlans={() => router.push("/#pricing")}
+            isSignedIn={isSignedIn}
+            isClaiming={isClaiming}
+            onClaim={claim}
+            onSeePlans={goToSignIn}
           />
         ) : null}
 

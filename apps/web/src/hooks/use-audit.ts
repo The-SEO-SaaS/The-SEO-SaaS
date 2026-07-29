@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { useMutation, usePolling, useQuery } from "@/hooks/use-request";
 import { auditApi, type AuditProgress, type AuditReport } from "@/lib/api";
+import { isApiError } from "@/lib/api-client";
 
 /**
  * Audit flow hooks.
@@ -78,12 +79,26 @@ export function useAuditFlow(publicId: string) {
   };
 }
 
-/** Attaches a completed anonymous audit to the signed-in account. */
+/**
+ * Attaches a completed anonymous audit to the signed-in account.
+ *
+ * On success the user goes to onboarding, which is pre-filled from this
+ * audit's findings — that's the whole point of claiming rather than asking
+ * them to re-enter their domain and competitors.
+ *
+ * A 401 means the session expired between page load and click; rather than
+ * showing an error, send them to sign in and return here.
+ */
 export function useClaimAudit(publicId: string) {
   const router = useRouter();
 
   const mutation = useMutation(() => auditApi.claim(publicId), {
     onSuccess: () => router.push("/onboarding"),
+    onError: (error) => {
+      if (isApiError(error) && error.isUnauthorized) {
+        router.push(`/login?redirectTo=${encodeURIComponent(`/audit/${publicId}`)}`);
+      }
+    },
   });
 
   return {

@@ -313,10 +313,16 @@ export function UnlockSection({
   domain,
   locked,
   onSeePlans,
+  onClaim,
+  isSignedIn,
+  isClaiming,
 }: {
   domain: string;
   locked: { issues: number; opportunities: number; keywords: number };
   onSeePlans?: () => void;
+  onClaim?: () => void;
+  isSignedIn?: boolean;
+  isClaiming?: boolean;
 }) {
   const parts = [
     locked.issues > 0 ? `${locked.issues} more findings` : null,
@@ -345,9 +351,24 @@ export function UnlockSection({
             </p>
           </div>
 
-          <Button onClick={onSeePlans} className="w-full shrink-0 sm:w-auto">
-            See plans
-          </Button>
+          {/*
+            A signed-in visitor looking at an unclaimed audit gets a different
+            action: they don't need to sign up, they need to attach this report
+            to their account. Showing "See plans" there would be a dead end.
+          */}
+          {isSignedIn && onClaim ? (
+            <Button
+              onClick={onClaim}
+              disabled={isClaiming}
+              className="w-full shrink-0 sm:w-auto"
+            >
+              {isClaiming ? "Adding…" : "Add to my account"}
+            </Button>
+          ) : (
+            <Button onClick={onSeePlans} className="w-full shrink-0 sm:w-auto">
+              Unlock full report
+            </Button>
+          )}
         </CardContent>
       </Card>
     </FadeIn>
