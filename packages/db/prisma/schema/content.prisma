@@ -1,0 +1,60 @@
+// ---------------------------------------------------------------------------
+// Content — everything the product *builds*, not just recommends. Backs the
+// Content page (AI Blog Briefs / AI Blog Posts / Generated Content / History).
+// ---------------------------------------------------------------------------
+
+enum ContentType {
+  BLOG_BRIEF
+  BLOG_POST
+  FEATURE_PAGE
+  LANDING_PAGE
+  COMPARISON_PAGE
+}
+
+enum ContentStatus {
+  DRAFT
+  GENERATING
+  GENERATED
+  PUBLISHED
+  ARCHIVED
+  FAILED
+}
+
+model Content {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Where this came from. Kept so every item can answer "why was this
+  /// recommended?" rather than showing a bare title.
+  opportunityId String?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  type   ContentType
+  status ContentStatus @default(DRAFT)
+
+  title     String
+  /// Structured outline for BLOG_BRIEF (headings, angle, target keyword).
+  brief     Json?
+  /// Markdown body for generated long-form content.
+  body      String?
+  keywords  String[]
+  rationale String?
+
+  wordCount Int?
+
+  /// Generation accounting.
+  jobId          String? @unique
+  model          String?
+  aiInputTokens  Int     @default(0)
+  aiOutputTokens Int     @default(0)
+  costUsd        Float   @default(0)
+  lastError      String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  @@index([projectId, status])
+  @@index([projectId, type, createdAt])
+}
