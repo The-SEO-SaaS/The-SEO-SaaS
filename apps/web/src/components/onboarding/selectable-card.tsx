@@ -39,10 +39,13 @@ export function SelectableCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors",
+        "flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors sm:px-4 sm:py-3.5",
         selected
           ? "border-ink-900 bg-surface ring-ink-900/5 ring-2"
           : "border-line bg-surface hover:border-line-strong",
+        // Disabled means "you're at your plan limit", so it reads as a ceiling
+        // rather than a broken control.
+        "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line",
         className,
       )}
       {...props}
@@ -56,7 +59,11 @@ export function SelectableCard({
         ) : null}
       </span>
 
-      {meta ? <span className="text-ink-300 text-xs-plus shrink-0 pt-0.5">{meta}</span> : null}
+      {meta ? (
+        <span className="text-ink-300 text-xs-plus hidden shrink-0 pt-0.5 sm:inline">
+          {meta}
+        </span>
+      ) : null}
 
       <span
         className={cn(
