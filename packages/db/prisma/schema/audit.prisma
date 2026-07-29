@@ -1,0 +1,146 @@
+// ---------------------------------------------------------------------------
+// Audit — the free-audit funnel. An audit can exist with NO user and NO
+// project (anonymous, pre-signup) and is later claimed into an account.
+// `publicId` is what appears in the shareable /audit/[publicId] URL, which
+// must render without auth (core to the Reddit go-to-market).
+// ---------------------------------------------------------------------------
+
+enum AuditStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AuditStep {
+  CRAWLING_WEBSITE
+  CHECKING_TECHNICAL_SEO
+  FINDING_COMPETITORS
+  ANALYZING_KEYWORDS
+  REVIEWING_TOP_PAGES
+  CALCULATING_SCORE
+  FINDING_OPPORTUNITIES
+}
+
+model Audit {
+  id       String @id @default(cuid())
+  /// Unguessable public slug used in shareable report URLs.
+  publicId String @unique
+
+  /// Both null while the audit is anonymous (pre-signup).
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  domain String
+
+  /// Captured at the soft email gate before the report renders. Optional —
+  /// the user is always allowed to skip and continue.
+  leadEmail    String?
+  leadClaimed  Boolean @default(false)
+
+  status      AuditStatus @default(QUEUED)
+  currentStep AuditStep?
+  progress    Int         @default(0)
+
+  /// Results.
+  score           Int?
+  technicalHealth Int?
+  /// Consultant-voice verdict shown instead of a bare number.
+  summary         String?
+
+  /// Raw provider payloads kept for debugging and for regenerating the report
+  /// without re-paying for Serpex/OpenRouter calls.
+  rawData Json?
+
+  /// Cost accounting, so we can prove the $0.05–$0.50 per-audit target.
+  searchCredits  Int   @default(0)
+  aiInputTokens  Int   @default(0)
+  aiOutputTokens Int   @default(0)
+  costUsd        Float @default(0)
+
+  jobId String? @unique
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  issues        AuditIssue[]
+  opportunities Opportunity[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([domain, createdAt])
+  @@index([status])
+}
+
+enum IssueSeverity {
+  CRITICAL
+  WARNING
+  NOTICE
+}
+
+model AuditIssue {
+  id      String @id @default(cuid())
+  auditId String
+  audit   Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  severity IssueSeverity
+  title    String
+  /// Plain-English explanation. Never ship an issue without one.
+  whyItMatters String
+  howToFix     String?
+  affectedUrls String[]
+
+  /// Controls ordering; the report shows top issues only, never a full dump.
+  rank Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([auditId, rank])
+}
+
+enum OpportunityType {
+  BLOG_POST
+  FEATURE_PAGE
+  LANDING_PAGE
+  COMPARISON_PAGE
+  INTEGRATION_PAGE
+  USE_CASE_PAGE
+  INDUSTRY_PAGE
+}
+
+enum OpportunityStatus {
+  SUGGESTED
+  DISMISSED
+  GENERATED
+}
+
+model Opportunity {
+  id String @id @default(cuid())
+
+  auditId String?
+  audit   Audit?  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  type   OpportunityType
+  title  String
+  /// The "why" behind the recommendation — mandatory per the UX philosophy.
+  rationale String
+  keywords  String[]
+
+  status OpportunityStatus @default(SUGGESTED)
+  rank   Int               @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contentItems Content[]
+
+  @@index([auditId, rank])
+  @@index([projectId, status])
+}
