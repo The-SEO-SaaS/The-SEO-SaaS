@@ -1,5 +1,5 @@
-import { AppError } from "../errors.js";
-import { sleep } from "../util/async.js";
+import { AppError } from "../errors.ts";
+import { sleep } from "../util/async.ts";
 
 /**
  * Shared HTTP foundation for every outbound provider call (Serpex,

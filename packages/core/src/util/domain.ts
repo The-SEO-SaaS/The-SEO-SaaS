@@ -1,4 +1,4 @@
-import { AppError } from "../errors.js";
+import { AppError } from "../errors.ts";
 
 /**
  * The free audit takes whatever a founder pastes into the hero input. That

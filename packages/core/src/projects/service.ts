@@ -1,7 +1,7 @@
 import prisma from "@theseosaas/db";
 
-import { getEntitlements } from "../billing/quota.js";
-import { AppError } from "../errors.js";
+import { getEntitlements } from "../billing/quota.ts";
+import { AppError } from "../errors.ts";
 
 /**
  * Sites (a.k.a. projects) and the dashboard built from one.

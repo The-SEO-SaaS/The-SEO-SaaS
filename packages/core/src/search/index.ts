@@ -11,4 +11,4 @@ export {
   type SearchResult,
   type SearchResponse,
   type SerpexRawResponse,
-} from "./serpex.js";
+} from "./serpex.ts";

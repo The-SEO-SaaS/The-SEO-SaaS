@@ -10,4 +10,4 @@ export {
   type KeywordsPayload,
   type KeywordIntent,
   type AddKeywordsResult,
-} from "./service.js";
+} from "./service.ts";

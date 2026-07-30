@@ -1,17 +1,17 @@
-export { crawlSite, type SiteCrawl, type PageCrawl } from "./crawl.js";
+export { crawlSite, type SiteCrawl, type PageCrawl } from "./crawl.ts";
 export {
   runTechnicalChecks,
   type TechnicalIssue,
   type TechnicalSummary,
   type IssueSeverity,
-} from "./technical.js";
-export { calculateScore, type ScoreBreakdown } from "./score.js";
+} from "./technical.ts";
+export { calculateScore, type ScoreBreakdown } from "./score.ts";
 export {
   discoverCompetitors,
   findBestBlogPosts,
   type DiscoveredCompetitor,
   type CompetitorBestPage,
-} from "./competitors.js";
+} from "./competitors.ts";
 export {
   extractPositioning,
   findKeywordGaps,
@@ -19,12 +19,12 @@ export {
   type Positioning,
   type KeywordGaps,
   type Opportunities,
-} from "./analysis.js";
+} from "./analysis.ts";
 export {
   runAuditPipeline,
   type AuditStepKey,
   type RunAuditInput,
-} from "./pipeline.js";
+} from "./pipeline.ts";
 export {
   startAudit,
   getAuditProgress,
@@ -33,4 +33,10 @@ export {
   startAuditSchema,
   captureLeadSchema,
   type StartAuditResult,
-} from "./service.js";
+} from "./service.ts";
+export {
+  getAuditHistory,
+  rerunAudit,
+  type AuditHistory,
+  type AuditHistoryEntry,
+} from "./history.ts";

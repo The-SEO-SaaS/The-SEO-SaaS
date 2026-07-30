@@ -1,9 +1,9 @@
 import prisma from "@theseosaas/db";
 import { z } from "zod";
 
-import { PLANS, type PlanId } from "../billing/plans.js";
-import { AppError } from "../errors.js";
-import { normalizeDomain } from "../util/domain.js";
+import { PLANS, type PlanId } from "../billing/plans.ts";
+import { AppError } from "../errors.ts";
+import { normalizeDomain } from "../util/domain.ts";
 
 /**
  * Onboarding.

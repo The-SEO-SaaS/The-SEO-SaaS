@@ -2,10 +2,10 @@ import prisma from "@theseosaas/db";
 import { env } from "@theseosaas/env/server";
 import { z } from "zod";
 
-import { AppError } from "../errors.js";
-import { createCheckoutSession, createPortalSession, type DodoSubscription } from "./dodo.js";
-import { PLANS, planFromProductId, productIdFor, type BillingInterval, type PlanId } from "./plans.js";
-import { verifyWebhook, type WebhookHeaders } from "./webhook-verify.js";
+import { AppError } from "../errors.ts";
+import { createCheckoutSession, createPortalSession, type DodoSubscription } from "./dodo.ts";
+import { PLANS, planFromProductId, productIdFor, type BillingInterval, type PlanId } from "./plans.ts";
+import { verifyWebhook, type WebhookHeaders } from "./webhook-verify.ts";
 
 /**
  * Ties the Dodo REST client and the Standard Webhooks verifier to our own

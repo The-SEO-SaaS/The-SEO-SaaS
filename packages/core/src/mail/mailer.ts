@@ -2,7 +2,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 
 import { env } from "@theseosaas/env/server";
 
-import { AppError } from "../errors.js";
+import { AppError } from "../errors.ts";
 
 /**
  * Email transport — nodemailer over plain SMTP. No Resend/Postmark/SendGrid

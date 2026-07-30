@@ -1,18 +1,18 @@
 import prisma from "@theseosaas/db";
 import { Prisma } from "@theseosaas/db/client";
 
-import { toAppError } from "../errors.js";
-import { settle } from "../util/async.js";
+import { toAppError } from "../errors.ts";
+import { settle } from "../util/async.ts";
 import {
   extractPositioning,
   findKeywordGaps,
   generateOpportunities,
   totalUsage,
-} from "./analysis.js";
-import { discoverCompetitors, findBestBlogPosts } from "./competitors.js";
-import { crawlSite } from "./crawl.js";
-import { calculateScore } from "./score.js";
-import { runTechnicalChecks } from "./technical.js";
+} from "./analysis.ts";
+import { discoverCompetitors, findBestBlogPosts } from "./competitors.ts";
+import { crawlSite } from "./crawl.ts";
+import { calculateScore } from "./score.ts";
+import { runTechnicalChecks } from "./technical.ts";
 
 /**
  * The audit pipeline — the seven steps the crawl loader shows.

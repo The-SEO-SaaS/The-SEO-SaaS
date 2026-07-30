@@ -1,9 +1,9 @@
 import prisma from "@theseosaas/db";
 
-import { AppError } from "../errors.js";
-import { normalizeDomain } from "../util/domain.js";
-import type { GoogleProfile } from "./google.js";
-import { createSession, type CreatedSession, type SessionMeta } from "./session.js";
+import { AppError } from "../errors.ts";
+import { normalizeDomain } from "../util/domain.ts";
+import type { GoogleProfile } from "./google.ts";
+import { createSession, type CreatedSession, type SessionMeta } from "./session.ts";
 
 /**
  * Where the two sign-in paths meet.
@@ -168,4 +168,25 @@ export async function claimAudit(
   ]);
 
   return { projectId: project.id };
+}
+
+/**
+ * Same as `claimAudit`, keyed by the public slug the client actually holds.
+ *
+ * Exists so a route handler never has to reach for prisma itself — apps/web
+ * has no business depending on @theseosaas/db, and the one route that did was
+ * the reason a production build couldn't resolve it.
+ */
+export async function claimAuditByPublicId(
+  publicId: string,
+  userId: string,
+): Promise<{ projectId: string }> {
+  const audit = await prisma.audit.findUnique({
+    where: { publicId },
+    select: { id: true },
+  });
+
+  if (!audit) throw AppError.notFound("We couldn't find that audit.");
+
+  return claimAudit(audit.id, userId);
 }

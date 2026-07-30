@@ -1,5 +1,5 @@
-import type { SiteCrawl } from "./crawl.js";
-import type { TechnicalIssue } from "./technical.js";
+import type { SiteCrawl } from "./crawl.ts";
+import type { TechnicalIssue } from "./technical.ts";
 
 /**
  * Scoring.

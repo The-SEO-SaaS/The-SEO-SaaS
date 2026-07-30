@@ -1,6 +1,6 @@
 import prisma from "@theseosaas/db";
 
-import { AppError } from "./errors.js";
+import { AppError } from "./errors.ts";
 
 /**
  * Fixed-window rate limiter on Postgres. No Redis, no extra vendor.

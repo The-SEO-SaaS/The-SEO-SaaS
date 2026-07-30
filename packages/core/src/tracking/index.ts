@@ -3,4 +3,4 @@ export {
   checkKeywordsNow,
   ensureKeywordRefreshScheduled,
   type KeywordRefreshResult,
-} from "./refresh.js";
+} from "./refresh.ts";

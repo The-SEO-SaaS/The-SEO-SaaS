@@ -18,7 +18,7 @@ import * as React from "react";
 const NAV_LINKS = [
   { href: "#how-it-works", label: "How it works" },
   { href: "#features", label: "Features" },
-  { href: "#pricing", label: "Pricing" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -118,7 +118,7 @@ const FOOTER_COLUMNS = [
     links: [
       { href: "#how-it-works", label: "How it works" },
       { href: "#features", label: "Features" },
-      { href: "#pricing", label: "Pricing" },
+      { href: "/pricing", label: "Pricing" },
     ],
   },
   {

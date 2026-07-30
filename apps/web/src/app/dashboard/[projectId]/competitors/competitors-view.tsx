@@ -174,9 +174,7 @@ export function CompetitorsView({ projectId }: { projectId: string }) {
             <p className="text-opportunity-strong text-sm leading-relaxed">
               You&apos;re tracking all {quota.limit} competitors your plan allows for this site.
             </p>
-            {/* Marketing pricing section, not /dashboard/settings — that page
-                isn't built yet and a dead link is worse than a detour. */}
-            <Button size="sm" variant="outline" render={<Link href="/#pricing" />}>
+            <Button size="sm" variant="outline" render={<Link href="/dashboard/settings" />}>
               See plans
             </Button>
           </div>

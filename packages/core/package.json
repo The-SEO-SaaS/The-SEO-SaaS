@@ -12,6 +12,7 @@
     "./search": "./src/search/index.ts",
     "./queue": "./src/queue/index.ts",
     "./billing": "./src/billing/index.ts",
+    "./plans": "./src/billing/plan-data.ts",
     "./http": "./src/http/index.ts",
     "./util": "./src/util/index.ts"
   },

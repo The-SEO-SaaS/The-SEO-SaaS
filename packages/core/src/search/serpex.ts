@@ -4,8 +4,8 @@ import prisma from "@theseosaas/db";
 import { env } from "@theseosaas/env/server";
 import { z } from "zod";
 
-import { request } from "../http/index.js";
-import { safeHostname } from "../util/domain.js";
+import { request } from "../http/index.ts";
+import { safeHostname } from "../util/domain.ts";
 
 /**
  * Serpex client — SERP data for competitor discovery, ranking pages, and

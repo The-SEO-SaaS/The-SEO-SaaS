@@ -8,26 +8,26 @@
  * The one rule: nothing in this package may import from "next/*".
  */
 
-export { AppError, isAppError, toAppError, type ErrorCode } from "./errors.js";
-export { request, type RequestOptions, type HttpResponse } from "./http/index.js";
+export { AppError, isAppError, toAppError, type ErrorCode } from "./errors.ts";
+export { request, type RequestOptions, type HttpResponse } from "./http/index.ts";
 export {
   checkRateLimit,
   consumeRateLimit,
   deleteExpiredRateLimits,
   type RateLimitPolicy,
   type RateLimitResult,
-} from "./ratelimit.js";
+} from "./ratelimit.ts";
 
-export * as auth from "./auth/index.js";
-export * as audit from "./audit/index.js";
-export * as onboarding from "./onboarding/index.js";
-export * as projects from "./projects/index.js";
-export * as keywords from "./keywords/index.js";
-export * as competitors from "./competitors/index.js";
-export * as ai from "./ai/index.js";
-export * as search from "./search/index.js";
-export * as queue from "./queue/index.js";
-export * as billing from "./billing/index.js";
-export * as tracking from "./tracking/index.js";
-export * as mail from "./mail/index.js";
-export * as util from "./util/index.js";
+export * as auth from "./auth/index.ts";
+export * as audit from "./audit/index.ts";
+export * as onboarding from "./onboarding/index.ts";
+export * as projects from "./projects/index.ts";
+export * as keywords from "./keywords/index.ts";
+export * as competitors from "./competitors/index.ts";
+export * as ai from "./ai/index.ts";
+export * as search from "./search/index.ts";
+export * as queue from "./queue/index.ts";
+export * as billing from "./billing/index.ts";
+export * as tracking from "./tracking/index.ts";
+export * as mail from "./mail/index.ts";
+export * as util from "./util/index.ts";

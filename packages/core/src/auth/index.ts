@@ -15,7 +15,7 @@ export {
   type ActiveSession,
   type CreatedSession,
   type SessionMeta,
-} from "./session.js";
+} from "./session.ts";
 
 export {
   OAUTH_STATE_COOKIE,
@@ -27,7 +27,7 @@ export {
   oauthCookieOptions,
   type AuthorizationRequest,
   type GoogleProfile,
-} from "./google.js";
+} from "./google.ts";
 
 export {
   emailSchema,
@@ -39,12 +39,13 @@ export {
   type RequestMagicLinkInput,
   type RequestMagicLinkResult,
   type MagicLinkResult,
-} from "./magic-link.js";
+} from "./magic-link.ts";
 
 export {
   signInWithGoogle,
   getUserById,
   updateProfile,
   claimAudit,
+  claimAuditByPublicId,
   type AuthResult,
-} from "./service.js";
+} from "./service.ts";

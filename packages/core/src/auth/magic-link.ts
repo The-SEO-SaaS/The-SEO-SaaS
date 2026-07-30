@@ -2,11 +2,11 @@ import prisma from "@theseosaas/db";
 import { env } from "@theseosaas/env/server";
 import { z } from "zod";
 
-import { AppError } from "../errors.js";
-import { sendMagicLinkEmail } from "../mail/index.js";
-import { consumeRateLimit } from "../ratelimit.js";
-import { generateToken, hashToken } from "../util/crypto.js";
-import { createSession, type CreatedSession, type SessionMeta } from "./session.js";
+import { AppError } from "../errors.ts";
+import { sendMagicLinkEmail } from "../mail/index.ts";
+import { consumeRateLimit } from "../ratelimit.ts";
+import { generateToken, hashToken } from "../util/crypto.ts";
+import { createSession, type CreatedSession, type SessionMeta } from "./session.ts";
 
 /**
  * Passwordless email sign-in.

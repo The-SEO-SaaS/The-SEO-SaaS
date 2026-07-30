@@ -8,6 +8,6 @@ export {
   type GenerateTextResult,
   type GenerateObjectOptions,
   type GenerateObjectResult,
-} from "./openrouter.js";
+} from "./openrouter.ts";
 
-export { SEO_LEAD_SYSTEM_PROMPT } from "./prompts.js";
+export { SEO_LEAD_SYSTEM_PROMPT } from "./prompts.ts";

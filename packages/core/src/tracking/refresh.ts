@@ -1,7 +1,7 @@
 import prisma from "@theseosaas/db";
 
-import { enqueue, JOB_TYPES } from "../queue/index.js";
-import { search } from "../search/serpex.js";
+import { enqueue, JOB_TYPES } from "../queue/index.ts";
+import { search } from "../search/serpex.ts";
 
 /**
  * Keyword rank tracking.

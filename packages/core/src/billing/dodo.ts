@@ -1,7 +1,7 @@
 import { env } from "@theseosaas/env/server";
 
-import { AppError } from "../errors.js";
-import { request } from "../http/index.js";
+import { AppError } from "../errors.ts";
+import { request } from "../http/index.ts";
 
 /**
  * Dodo Payments client.

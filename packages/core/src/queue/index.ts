@@ -9,7 +9,7 @@ export {
   cancelJob,
   type EnqueueOptions,
   type QueuedJob,
-} from "./queue.js";
+} from "./queue.ts";
 
 export {
   createWorker,
@@ -17,7 +17,7 @@ export {
   type WorkerOptions,
   type JobHandler,
   type JobContext,
-} from "./worker.js";
+} from "./worker.ts";
 
 /** Handler keys. Kept here so producer and worker can't drift apart. */
 export const JOB_TYPES = {

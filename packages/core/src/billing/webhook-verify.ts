@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { env } from "@theseosaas/env/server";
 
-import { AppError } from "../errors.js";
+import { AppError } from "../errors.ts";
 
 /**
  * Standard Webhooks signature verification, hand-rolled on node:crypto.

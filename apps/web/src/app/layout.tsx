@@ -21,10 +21,20 @@ const instrumentSans = Instrument_Sans({
   display: "swap",
 });
 
+/**
+ * Icons and the web manifest are picked up automatically from the file
+ * conventions in this folder — `favicon.ico`, `icon0.svg`, `icon1.png`,
+ * `apple-icon.png` and `manifest.json` all sit alongside this file, so Next
+ * emits the corresponding <link> tags itself. The only piece it can't infer is
+ * the iOS home-screen title, which is what `appleWebApp.title` sets.
+ */
 export const metadata: Metadata = {
   title: "TheSEOSaaS — Your AI SEO Growth Team",
   description:
     "We don't just tell you how to improve your SEO — we build the assets that grow your traffic.",
+  appleWebApp: {
+    title: "The SEO SaaS",
+  },
 };
 
 export default function RootLayout({

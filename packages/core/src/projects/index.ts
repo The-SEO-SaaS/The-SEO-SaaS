@@ -9,4 +9,4 @@ export {
   type CompetitorStanding,
   type AveragePositionPoint,
   type NextAction,
-} from "./service.js";
+} from "./service.ts";

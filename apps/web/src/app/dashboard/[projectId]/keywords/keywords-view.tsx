@@ -242,9 +242,7 @@ export function KeywordsView({ projectId }: { projectId: string }) {
               You&apos;re tracking all {quota.limit} keywords your plan allows. Untrack one to
               make room, or upgrade for more.
             </p>
-            {/* Points at the marketing pricing section — a billing settings
-                page doesn't exist yet, and a dead link is worse than a detour. */}
-            <Button size="sm" variant="outline" render={<Link href="/#pricing" />}>
+            <Button size="sm" variant="outline" render={<Link href="/dashboard/settings" />}>
               See plans
             </Button>
           </div>

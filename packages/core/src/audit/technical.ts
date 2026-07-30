@@ -1,4 +1,4 @@
-import type { PageCrawl, SiteCrawl } from "./crawl.js";
+import type { PageCrawl, SiteCrawl } from "./crawl.ts";
 
 /**
  * Technical SEO checks across the crawled pages.

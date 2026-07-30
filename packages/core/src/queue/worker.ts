@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sleep } from "../util/async.js";
+import { sleep } from "../util/async.ts";
 import {
   claimJobs,
   completeJob,
@@ -8,7 +8,7 @@ import {
   reclaimStalledJobs,
   updateProgress,
   type QueuedJob,
-} from "./queue.js";
+} from "./queue.ts";
 
 /**
  * Long-running worker loop.

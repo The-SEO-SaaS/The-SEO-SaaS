@@ -1,13 +1,13 @@
-import { sendMail, verifyMailConnection } from "./mailer.js";
+import { sendMail, verifyMailConnection } from "./mailer.ts";
 import {
   auditReadyTemplate,
   magicLinkTemplate,
   type AuditReadyTemplateInput,
   type MagicLinkTemplateInput,
-} from "./templates.js";
+} from "./templates.ts";
 
-export { sendMail, verifyMailConnection, getTransporter } from "./mailer.js";
-export { escapeHtml, magicLinkTemplate, auditReadyTemplate } from "./templates.js";
+export { sendMail, verifyMailConnection, getTransporter } from "./mailer.ts";
+export { escapeHtml, magicLinkTemplate, auditReadyTemplate } from "./templates.ts";
 
 export async function sendMagicLinkEmail(
   input: MagicLinkTemplateInput & { to: string },

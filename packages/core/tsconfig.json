@@ -1,5 +1,27 @@
 {
   "extends": "@theseosaas/config/tsconfig.base.json",
+  "compilerOptions": {
+    /**
+     * Relative imports in this package carry explicit `.ts` extensions.
+     *
+     * They have to point at a file that actually exists, because two very
+     * different runtimes load this source directly:
+     *   - Turbopack, when apps/web imports @theseosaas/core
+     *   - `node --experimental-strip-types`, which runs apps/worker
+     *
+     * Neither guesses extensions. `.js` specifiers — the usual NodeNext
+     * convention for compiled output — resolved to nothing here, because
+     * nothing is ever compiled: consumers import the TypeScript. That was the
+     * cause of the "Can't resolve './errors.js'" build failure. Extensionless
+     * would satisfy Turbopack but break the worker, since Node's ESM resolver
+     * requires a real extension. So `.ts`, which both accept.
+     *
+     * allowImportingTsExtensions requires noEmit, which is honest anyway —
+     * this package has no build step.
+     */
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

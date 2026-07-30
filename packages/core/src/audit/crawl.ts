@@ -1,6 +1,6 @@
-import { AppError } from "../errors.js";
-import { mapWithConcurrency } from "../util/async.js";
-import { safeHostname, toUrl } from "../util/domain.js";
+import { AppError } from "../errors.ts";
+import { mapWithConcurrency } from "../util/async.ts";
+import { safeHostname, toUrl } from "../util/domain.ts";
 
 /**
  * Site crawler.

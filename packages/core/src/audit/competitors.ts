@@ -1,5 +1,5 @@
-import { mapWithConcurrency, settle } from "../util/async.js";
-import { search } from "../search/serpex.js";
+import { mapWithConcurrency, settle } from "../util/async.ts";
+import { search } from "../search/serpex.ts";
 
 /**
  * Competitor discovery and their best-performing content.

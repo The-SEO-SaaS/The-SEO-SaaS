@@ -6,4 +6,4 @@ export {
   type CompetitorStanding,
   type MatrixRow,
   type CompetitorsPayload,
-} from "./service.js";
+} from "./service.ts";

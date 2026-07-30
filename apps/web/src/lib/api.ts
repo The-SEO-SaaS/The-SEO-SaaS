@@ -256,6 +256,43 @@ export const billingApi = {
   portal: () => http.post<{ url: string }>("/billing/portal"),
 };
 
+// --- Account / settings ------------------------------------------------------
+
+export interface UsageLine {
+  metric: "AI_BLOG_POST" | "AI_RECOMMENDATION";
+  label: string;
+  used: number;
+  /** May be Infinity, which JSON serialises as null — treat null as unlimited. */
+  limit: number | null;
+}
+
+export interface StructuralLine {
+  label: string;
+  used: number;
+  limit: number;
+}
+
+export interface AccountSummary {
+  user: { id: string; email: string; name: string | null; image: string | null };
+  subscription: {
+    plan: PlanId;
+    planName: string;
+    interval: BillingInterval;
+    status: string;
+    isActive: boolean;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    hasPortal: boolean;
+  } | null;
+  usage: UsageLine[];
+  structural: StructuralLine[];
+  periodEnd: string;
+}
+
+export const accountApi = {
+  summary: (signal?: AbortSignal) => http.get<AccountSummary>("/account", { signal }),
+};
+
 // --- Sites / dashboard -------------------------------------------------------
 
 export interface SiteSummary {
@@ -328,6 +365,39 @@ export const sitesApi = {
 
   dashboard: (projectId: string, signal?: AbortSignal) =>
     http.get<SiteDashboard>(`/sites/${projectId}`, { signal }),
+};
+
+// --- Audit history -----------------------------------------------------------
+
+export interface AuditHistoryEntry {
+  id: string;
+  publicId: string;
+  status: AuditStatus;
+  score: number | null;
+  technicalHealth: number | null;
+  /** Positive is an improvement, vs the previous completed audit. */
+  scoreChange: number | null;
+  issueCount: number;
+  pagesCrawled: number;
+  summary: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface AuditHistory {
+  site: { id: string; domain: string };
+  audits: AuditHistoryEntry[];
+  inFlight: { publicId: string; status: string } | null;
+  canRerun: boolean;
+  rerunBlockedReason: string | null;
+}
+
+export const auditHistoryApi = {
+  list: (projectId: string, signal?: AbortSignal) =>
+    http.get<AuditHistory>(`/sites/${projectId}/audits`, { signal }),
+
+  rerun: (projectId: string) =>
+    http.post<{ publicId: string }>(`/sites/${projectId}/audits`),
 };
 
 // --- Keywords ----------------------------------------------------------------

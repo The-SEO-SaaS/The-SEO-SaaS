@@ -1,9 +1,9 @@
 import prisma from "@theseosaas/db";
 import { z } from "zod";
 
-import { getEntitlements } from "../billing/quota.js";
-import { AppError } from "../errors.js";
-import { normalizeDomain } from "../util/domain.js";
+import { getEntitlements } from "../billing/quota.ts";
+import { AppError } from "../errors.ts";
+import { normalizeDomain } from "../util/domain.ts";
 
 /**
  * Competitor management and head-to-head comparison.

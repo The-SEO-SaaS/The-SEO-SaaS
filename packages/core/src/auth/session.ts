@@ -1,6 +1,6 @@
 import prisma from "@theseosaas/db";
 
-import { generateToken, hashToken } from "../util/crypto.js";
+import { generateToken, hashToken } from "../util/crypto.ts";
 
 /**
  * Session management, hand-rolled.

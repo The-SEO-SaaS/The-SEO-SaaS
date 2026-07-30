@@ -10,4 +10,4 @@ export {
   keywordsStepSchema,
   type OnboardingStep,
   type OnboardingState,
-} from "./service.js";
+} from "./service.ts";

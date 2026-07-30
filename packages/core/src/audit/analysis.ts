@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { generateObject, sumUsage, type Usage } from "../ai/openrouter.js";
-import { SEO_LEAD_SYSTEM_PROMPT } from "../ai/prompts.js";
-import type { SiteCrawl } from "./crawl.js";
-import type { CompetitorBestPage, DiscoveredCompetitor } from "./competitors.js";
+import { generateObject, sumUsage, type Usage } from "../ai/openrouter.ts";
+import { SEO_LEAD_SYSTEM_PROMPT } from "../ai/prompts.ts";
+import type { SiteCrawl } from "./crawl.ts";
+import type { CompetitorBestPage, DiscoveredCompetitor } from "./competitors.ts";
 
 /**
  * The interpretation layer — everything a model is genuinely better at than a

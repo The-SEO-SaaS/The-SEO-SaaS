@@ -1,12 +1,12 @@
 import prisma from "@theseosaas/db";
 import { z } from "zod";
 
-import { AppError } from "../errors.js";
-import { enqueue, JOB_TYPES } from "../queue/index.js";
-import { consumeRateLimit } from "../ratelimit.js";
-import { normalizeDomain } from "../util/domain.js";
-import { randomId } from "../util/crypto.js";
-import { emailSchema } from "../auth/magic-link.js";
+import { AppError } from "../errors.ts";
+import { enqueue, JOB_TYPES } from "../queue/index.ts";
+import { consumeRateLimit } from "../ratelimit.ts";
+import { normalizeDomain } from "../util/domain.ts";
+import { randomId } from "../util/crypto.ts";
+import { emailSchema } from "../auth/magic-link.ts";
 
 /**
  * Audit use-cases called by route handlers.

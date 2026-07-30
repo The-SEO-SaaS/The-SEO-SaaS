@@ -1,10 +1,15 @@
 export {
   PLANS,
   PLAN_ORDER,
+  YEARLY_MONTHS,
   getPlan,
   priceFor,
   effectiveMonthlyFor,
   yearlySavingsFor,
+  formatPrice,
+  formatLimit,
+  featuresFor,
+  INCLUDED_IN_EVERY_PLAN,
   productIdFor,
   planFromProductId,
   queuePriorityFor,
@@ -13,7 +18,7 @@ export {
   type BillingInterval,
   type PlanLimits,
   type PlanDefinition,
-} from "./plans.js";
+} from "./plans.ts";
 
 export {
   getEntitlements,
@@ -25,7 +30,7 @@ export {
   type QuotaMetric,
   type QuotaStatus,
   type Entitlements,
-} from "./quota.js";
+} from "./quota.ts";
 
 export {
   createCheckoutSession,
@@ -33,13 +38,20 @@ export {
   getSubscription,
   type CreateCheckoutInput,
   type DodoSubscription,
-} from "./dodo.js";
+} from "./dodo.ts";
 
-export { verifyWebhook, type WebhookHeaders } from "./webhook-verify.js";
+export { verifyWebhook, type WebhookHeaders } from "./webhook-verify.ts";
 
 export {
   createCheckout,
   processWebhookEvent,
   getSubscriptionForUser,
   createPortalLink,
-} from "./service.js";
+} from "./service.ts";
+
+export {
+  getAccountSummary,
+  type AccountSummary,
+  type UsageLine,
+  type StructuralLine,
+} from "./account.ts";

@@ -1,7 +1,7 @@
 import prisma from "@theseosaas/db";
 
-import { AppError } from "../errors.js";
-import { PLANS, type PlanId, type PlanLimits } from "./plans.js";
+import { AppError } from "../errors.ts";
+import { PLANS, type PlanId, type PlanLimits } from "./plans.ts";
 
 /**
  * Quota enforcement.
