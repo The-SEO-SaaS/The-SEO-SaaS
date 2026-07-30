@@ -146,8 +146,7 @@ and terms. Screenshots and the HTML agree; use both.
    Not built, and blocked on one decision: where the posts live (MDX in the
    repo, or the database). Note this is a *different* screen from the app's
    Content library, despite the design labelling both `/blog`.
-2. **Onboarding plan step body.**
-3. **Content, remaining two sections** — "Generated content" (landing and
+2. **Content, remaining two sections** — "Generated content" (landing and
    feature copy) and "Content history". Different generator; briefs and posts
    shipped, these didn't.
 
@@ -165,6 +164,18 @@ and terms. Screenshots and the HTML agree; use both.
   with the PRO chip.
 - **Competitors body**: full-bleed 4-up rival strip on the 1px hairline grid,
   shared-keyword matrix with shaded leader cells.
+- **Keyword difficulty and demand, from the SERP we already fetch.**
+  `core/keywords/serp-signals.ts` scores each term from top-10 domain
+  diversity, giant-domain and forum presence, homepage ratio, exact-phrase
+  titles and phrase length. Computed inside the daily rank sweep, where the
+  SERP is already paid for and in memory, so it costs nothing extra.
+  Difficulty is surfaced as "our estimate" with a tooltip saying it is not
+  comparable to Ahrefs or Semrush. The design's VOLUME column holds a
+  three-way demand band, never a monthly figure — see the omissions table.
+- **Onboarding plan step** rebuilt to spec: self-start interval toggle with
+  the "2 months free" pill, three-up cards at the design's 18px gaps,
+  RECOMMENDED marker driven by what the audit actually found, and both
+  intervals priced per month so the cards stay comparable.
 - **Content generation — the actual product promise, now real.** Two stages:
   `createBriefFromOpportunity` runs inline (one small structured call, free on
   every plan) so the user reviews the angle before spending anything;
@@ -209,7 +220,7 @@ left out, and each carries a comment in the file saying so:
 | Dashboard | Content-in-flight table | Nothing generates content yet. |
 | Audits | Technical / On-page / Content / Speed grouping | `AuditIssue` has no `category` column and only technical + content health are scored, so four sections with per-section scores would be three-quarters invented. Grouped by severity instead — the axis the design's own legend leads with. Adding a `category` enum to `AuditIssue` is the upgrade path. |
 | Audits | "Traffic at risk", "Fix 3 critical", weekly-crawl line | No traffic source, no auto-fix, no scheduled re-audits. |
-| Keywords | `VOLUME`, `DIFFICULTY` | Serpex returns SERP results only. |
+| Keywords | `VOLUME` as a monthly figure | A SERP response carries no demand signal, so any number would be invented. The column now holds a High/Medium/Low **demand band** derived from SERP composition instead. Real volume needs Keyword Planner (free, bucketed ranges, needs an Ads account) or a paid keyword API. |
 | Competitors | `THEIR SCORE`, "what they shipped this month" | No rival crawling. |
 
 ---
@@ -314,12 +325,13 @@ suppressing route-type errors. Worth revisiting once the build is green.
 
 ## Blocked on the user
 
-1. **`pnpm db:migrate`** — three pending schema changes with no migration:
+1. **`pnpm db:migrate`** — four pending schema changes with no migration:
    billing (`Subscription.interval`, `dodoProductId`, `WebhookEvent.failedAt/lastError`),
-   the `CompetitorRanking` model, and `Audit.notifyEmail` + `Audit.notifiedAt`
-   for the crawl-completion email. **Run `pnpm db:generate` too** — the
-   onboarding-complete code won't typecheck until the Prisma client knows
-   about the two new Audit fields.
+   the `CompetitorRanking` model, `Audit.notifyEmail` + `Audit.notifiedAt`
+   for the crawl-completion email, and `Keyword.difficulty` +
+   `Keyword.demand` + the `KeywordDemand` enum. **Run `pnpm db:generate`
+   too** — nothing touching those fields typechecks until the Prisma client
+   knows about them.
 2. **Eleven required env vars**, all currently unset:
    `DATABASE_URL`, `CORS_ORIGIN`, `APP_URL`, `GOOGLE_CLIENT_ID`,
    `GOOGLE_CLIENT_SECRET`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`,
