@@ -72,13 +72,25 @@ interface RawKeyword {
  * Competitors and keywords live in the audit's rawData until the user confirms
  * them here — that's the point at which they become real, plan-limited rows.
  */
-export async function getOnboardingState(userId: string): Promise<OnboardingState> {
+/**
+ * `projectId` is what makes this function double as the "add another site"
+ * wizard: pass one and it reviews that specific project's audit instead of
+ * the account's first one. Since `resolveStep` already skips the plan screen
+ * once a subscription exists, an existing subscriber calling this for a new
+ * site naturally gets site → competitors → keywords with no plan/billing step
+ * — nothing extra to special-case.
+ */
+export async function getOnboardingState(
+  userId: string,
+  projectId?: string,
+): Promise<OnboardingState> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       onboardedAt: true,
       subscription: { select: { plan: true } },
       projects: {
+        where: projectId ? { id: projectId } : undefined,
         orderBy: { createdAt: "asc" },
         take: 1,
         select: {
@@ -106,6 +118,12 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
   });
 
   if (!user) throw AppError.unauthorized();
+
+  // An explicit projectId that matched nothing is a wrong/foreign id, not a
+  // fresh account — those are different situations and shouldn't look alike.
+  if (projectId && user.projects.length === 0) {
+    throw AppError.notFound("We couldn't find that site.");
+  }
 
   const project = user.projects[0] ?? null;
   const plan = user.subscription?.plan ?? null;

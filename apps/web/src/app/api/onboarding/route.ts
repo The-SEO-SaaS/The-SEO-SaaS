@@ -1,4 +1,5 @@
 import { onboarding } from "@theseosaas/core";
+import type { NextRequest } from "next/server";
 
 import { handler, ok, requireUser } from "@/lib/route-helpers";
 
@@ -8,10 +9,16 @@ import { handler, ok, requireUser } from "@/lib/route-helpers";
  * Returned as a single payload rather than per-step endpoints because every
  * step is pre-filled from the same claimed audit. Fetching it once means
  * stepping back and forth is instant, with no spinner between screens.
+ *
+ * An optional `?projectId=` reuses this same endpoint for the "add another
+ * site" wizard — reviewing that project's audit instead of the account's
+ * first one. Omitted, it's the original one-time account setup.
  */
-export const GET = handler(async () => {
+export const GET = handler(async (request: NextRequest) => {
   const user = await requireUser();
-  return ok(await onboarding.getOnboardingState(user.id));
+  const projectId = request.nextUrl.searchParams.get("projectId") ?? undefined;
+
+  return ok(await onboarding.getOnboardingState(user.id, projectId));
 });
 
 export const dynamic = "force-dynamic";
