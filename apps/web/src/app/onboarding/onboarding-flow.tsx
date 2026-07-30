@@ -1,5 +1,6 @@
 "use client";
 
+import { PLANS, recommendPlan } from "@theseosaas/core/plans";
 import { Button } from "@theseosaas/ui/components/button";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { AlertTriangle, Search } from "lucide-react";
@@ -221,14 +222,21 @@ export function OnboardingFlow() {
   return (
     <StepShell
       step="plan"
-      eyebrow="PLAN"
-      title="Pick the limits that fit"
-      subtitle="Every plan includes every feature. The only difference is how much you can track and generate each month."
+      eyebrow="CHOOSE A PLAN"
+      title="Pick the plan that matches your publishing pace"
+      subtitle="The audit and briefs are already yours. The plan decides how many full articles we write each month."
       help={{
-        title: "Monthly article quota",
-        body: "Audits and rank checks are unlimited on every plan.",
+        title: "Based on your setup",
+        body: `${flow.selectedKeywords.size} keyword${flow.selectedKeywords.size === 1 ? "" : "s"} and ${flow.selectedCompetitors.size} competitor${flow.selectedCompetitors.size === 1 ? "" : "s"} fit ${
+          PLANS[
+            recommendPlan({
+              competitors: flow.selectedCompetitors.size,
+              keywordOpportunities: flow.selectedKeywords.size,
+            })
+          ].name
+        }. Every plan includes every feature — they differ only by limits.`,
       }}
-      footerNote="You'll be sent to secure checkout. Nothing is charged until you confirm."
+      footerNote="Cancel any time · card charged after setup finishes"
       error={checkout.error}
       isSubmitting={checkout.isRedirecting}
       onBack={flow.back}
