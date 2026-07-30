@@ -1,39 +1,52 @@
 "use client";
 
+import { BrandGlyph } from "@theseosaas/ui/components/brand-mark";
 import { Button } from "@theseosaas/ui/components/button";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { FadeIn } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
-import { ArrowLeft, Check, Search } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import * as React from "react";
 
 import type { OnboardingStepKey } from "@/lib/api";
 
 /**
- * Chrome shared by every onboarding step.
+ * Onboarding chrome, matched to the design.
  *
- * Four steps plus completion: site → competitors → keywords → plan. The design
- * also has a "voice" step feeding content-generation prompts; deferred to v0.2
- * since it only pays off once blog generation is tuned enough for voice to
- * change the output, and every step before the plan screen costs conversion.
+ * Spec: a two-column screen. The left column is a fixed rail — logo, a "SETUP"
+ * label opposite "Step N of M", a thin progress bar, then the step list where
+ * each entry carries a title *and* a subtitle, and a contextual help card
+ * pinned to the bottom. The right column is the step itself: eyebrow, title,
+ * subtitle, content, and a footer with a muted note left and Back/Continue
+ * right.
  *
- * The design's layout is a fixed two-column desktop rail. Below `lg` that
- * becomes a horizontal progress strip — a vertical rail would push the actual
- * form below the fold on a phone.
+ * The previous version was a top bar over a hint rail with the buttons in a
+ * bordered footer — same information, none of the design's structure, and it
+ * dropped the per-step help card entirely.
+ *
+ * The design has five steps; this build ships four. Its step 2, "Brand
+ * context", needs somewhere to store tone and audience before it can do
+ * anything, so it is deliberately absent rather than faked — see
+ * ONBOARDING_STEPS below.
+ *
+ * Below `lg` the rail moves above the content as a compact progress strip: a
+ * 248px column plus a form does not fit a phone, and the design has no mobile
+ * view to copy.
  */
 export const ONBOARDING_STEPS: {
   key: OnboardingStepKey;
   label: string;
   hint: string;
 }[] = [
-  { key: "site", label: "Your site", hint: "Confirm what we crawled" },
-  { key: "competitors", label: "Competitors", hint: "Who takes your terms" },
-  { key: "keywords", label: "Keywords", hint: "What we watch weekly" },
-  { key: "plan", label: "Plan", hint: "Pick your limits" },
+  { key: "site", label: "Your site", hint: "Domain, type, platform" },
+  { key: "competitors", label: "Competitors", hint: "Who we watch weekly" },
+  { key: "keywords", label: "Keywords", hint: "What we track" },
+  { key: "plan", label: "Plan", hint: "Monthly article quota" },
 ];
 
 interface StepShellProps {
   step: OnboardingStepKey;
+  /** Uppercase label above the title, e.g. "COMPETITORS". */
   eyebrow?: string;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -44,13 +57,15 @@ interface StepShellProps {
   continueDisabled?: boolean;
   isSubmitting?: boolean;
   error?: string | null;
-  /** Shown above the buttons — usually a quota line like "3 of 3 used". */
-  meta?: React.ReactNode;
+  /** Muted note beside the buttons, e.g. "We check their pages weekly". */
+  footerNote?: React.ReactNode;
+  /** The rail's bottom card. Title plus body, per the design. */
+  help?: { title: React.ReactNode; body: React.ReactNode };
 }
 
 export function StepShell({
   step,
-  eyebrow = "Setup",
+  eyebrow,
   title,
   subtitle,
   children,
@@ -60,145 +75,152 @@ export function StepShell({
   continueDisabled,
   isSubmitting,
   error,
-  meta,
+  footerNote,
+  help,
 }: StepShellProps) {
-  const activeIndex = ONBOARDING_STEPS.findIndex((s) => s.key === step);
+  const activeIndex = ONBOARDING_STEPS.findIndex((entry) => entry.key === step);
+  const total = ONBOARDING_STEPS.length;
+  const progress = ((activeIndex + 1) / total) * 100;
 
   return (
-    <div className="min-h-svh">
-      <header className="border-line border-b">
-        <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-4 py-3.5 sm:px-6">
-          <IconTile tone="ink" size="md">
-            <Search />
+    <div className="flex min-h-svh flex-col lg:flex-row">
+      {/* Rail */}
+      <aside className="flex shrink-0 flex-col border-b border-[#EDEFF3] bg-surface px-5 pt-5 pb-4 lg:w-[248px] lg:border-r lg:border-b-0 lg:px-6 lg:pt-7 lg:pb-6">
+        <div className="flex items-center gap-2.5">
+          <IconTile tone="ink" size="brand">
+            <BrandGlyph />
           </IconTile>
-          <span className="font-display text-ink-900 text-md font-semibold tracking-tight">
+          <span className="font-display text-ink-900 text-[15px] font-semibold tracking-[-0.02em]">
             TheSEOSaaS
           </span>
         </div>
-      </header>
 
-      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[220px_1fr] lg:gap-12">
-        <StepRail activeIndex={activeIndex} />
+        <div className="mt-6 flex items-baseline justify-between gap-3 lg:mt-8">
+          <span className="text-[10.5px] font-semibold tracking-[0.1em] text-[#6B7480]">
+            SETUP
+          </span>
+          <span className="text-[11.5px] text-[#6B7480]">
+            Step {activeIndex + 1} of {total}
+          </span>
+        </div>
 
-        <main className="min-w-0 space-y-7">
-          <FadeIn key={step} className="space-y-2">
-            <div className="eyebrow text-ink-300">
-              {eyebrow} · Step {activeIndex + 1} of {ONBOARDING_STEPS.length}
-            </div>
-            <h1 className="font-display text-ink-900 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="text-ink-400 max-w-[62ch] text-base leading-relaxed text-pretty">
-                {subtitle}
-              </p>
-            ) : null}
-          </FadeIn>
+        <div className="mt-2.5 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F3F7]">
+          <div
+            className="bg-ink-900 h-full rounded-full transition-[width] duration-400 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
 
-          <FadeIn key={`${step}-body`} delay={0.06}>
-            {children}
-          </FadeIn>
-
-          {error ? (
-            <div className="border-critical/20 bg-critical/5 text-critical-strong rounded-lg border px-3.5 py-2.5 text-sm">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="border-line flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-            {meta ? <div className="text-ink-300 text-sm">{meta}</div> : <span />}
-
-            <div className="flex items-center gap-2">
-              {onBack ? (
-                <Button variant="ghost" size="sm" onClick={onBack} disabled={isSubmitting}>
-                  <ArrowLeft />
-                  Back
-                </Button>
-              ) : null}
-
-              {onContinue ? (
-                <Button
-                  onClick={onContinue}
-                  disabled={continueDisabled || isSubmitting}
-                  className="flex-1 sm:flex-none"
-                >
-                  {isSubmitting ? "Saving…" : continueLabel}
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
-
-function StepRail({ activeIndex }: { activeIndex: number }) {
-  return (
-    <>
-      {/* Desktop: vertical rail with hints, per the design. */}
-      <nav className="hidden lg:block">
-        <ol className="space-y-1">
-          {ONBOARDING_STEPS.map((item, index) => {
+        {/* Full list on desktop; the strip above carries mobile. */}
+        <ol className="mt-5 hidden flex-col gap-0.5 lg:flex">
+          {ONBOARDING_STEPS.map((entry, index) => {
             const isDone = index < activeIndex;
             const isActive = index === activeIndex;
 
             return (
               <li
-                key={item.key}
+                key={entry.key}
                 className={cn(
-                  "flex items-start gap-3 rounded-lg px-2.5 py-2.5 transition-colors",
-                  isActive && "bg-surface-sunken",
+                  "flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors",
+                  isActive && "bg-[#F8F9FA] shadow-[inset_0_0_0_1px_#EDEFF3]",
                 )}
               >
                 <StepMarker index={index} isDone={isDone} isActive={isActive} />
-                <div className="min-w-0">
+                <div className="min-w-0 pt-px">
                   <div
                     className={cn(
-                      "text-base font-medium",
-                      isActive ? "text-ink-900" : isDone ? "text-ink-500" : "text-ink-300",
+                      "text-[13.5px] leading-tight",
+                      isActive
+                        ? "text-ink-900 font-semibold"
+                        : isDone
+                          ? "text-ink-700 font-medium"
+                          : "font-normal text-[#9AA2AE]",
                     )}
                   >
-                    {item.label}
+                    {entry.label}
                   </div>
-                  <div className="text-ink-300 text-xs-plus">{item.hint}</div>
+                  <div className="mt-0.5 text-[11.5px] leading-tight text-[#9AA2AE]">
+                    {entry.hint}
+                  </div>
                 </div>
               </li>
             );
           })}
         </ol>
 
-        <p className="text-ink-300 mt-5 px-2.5 text-xs leading-relaxed">
-          Takes about two minutes. Everything here can be changed later in Settings.
-        </p>
-      </nav>
+        <div className="flex-1" />
 
-      {/* Mobile: horizontal strip. A vertical rail would push the form below
-          the fold before the user has seen a single field. */}
-      <nav className="flex items-center gap-2 lg:hidden">
-        {ONBOARDING_STEPS.map((item, index) => {
-          const isDone = index < activeIndex;
-          const isActive = index === activeIndex;
+        {help ? (
+          <div className="mt-6 hidden rounded-xl border border-[#E2E6EC] bg-[#FAFBFC] px-4 py-3.5 lg:block">
+            <div className="text-ink-900 text-[12.5px] font-medium">{help.title}</div>
+            <p className="mt-1 text-[11.5px] leading-[1.55] text-[#6B7480]">{help.body}</p>
+          </div>
+        ) : null}
+      </aside>
 
-          return (
-            <React.Fragment key={item.key}>
-              <StepMarker index={index} isDone={isDone} isActive={isActive} />
-              {index < ONBOARDING_STEPS.length - 1 ? (
-                <span
-                  className={cn(
-                    "h-px flex-1 transition-colors",
-                    isDone ? "bg-success" : "bg-line",
-                  )}
-                />
-              ) : null}
-            </React.Fragment>
-          );
-        })}
-      </nav>
-    </>
+      {/* Step */}
+      <main className="flex min-w-0 flex-1 flex-col px-5 py-7 sm:px-10 sm:py-9">
+        <FadeIn key={step} className="min-w-0 flex-1">
+          {eyebrow ? (
+            <div className="text-[11px] font-semibold tracking-[0.12em] text-[#6B7480]">
+              {eyebrow}
+            </div>
+          ) : null}
+
+          <h1 className="font-display text-ink-900 mt-2.5 text-[24px] font-semibold tracking-[-0.028em] text-balance sm:text-[27px]">
+            {title}
+          </h1>
+
+          {subtitle ? (
+            <p className="mt-2.5 max-w-[62ch] text-[14px] leading-[1.6] text-[#5B6472]">
+              {subtitle}
+            </p>
+          ) : null}
+
+          <div className="mt-7">{children}</div>
+
+          {error ? (
+            <div className="border-critical/20 bg-critical/5 text-critical-strong mt-5 rounded-lg border px-3.5 py-2.5 text-sm">
+              {error}
+            </div>
+          ) : null}
+        </FadeIn>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          {footerNote ? (
+            <p className="text-[12.5px] text-[#6B7480]">{footerNote}</p>
+          ) : (
+            <span />
+          )}
+
+          <div className="flex items-center gap-2.5">
+            {onBack ? (
+              <Button variant="outline" size="sm" onClick={onBack} disabled={isSubmitting}>
+                Back
+              </Button>
+            ) : null}
+
+            {onContinue ? (
+              <Button
+                onClick={onContinue}
+                disabled={continueDisabled || isSubmitting}
+                className="flex-1 sm:flex-none"
+              >
+                {isSubmitting ? "Saving…" : continueLabel}
+                {!isSubmitting ? <ArrowRight /> : null}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
 
+/**
+ * Green check when done, filled ink square with the number when current, an
+ * outlined circle when still ahead — the design's three states exactly.
+ */
 function StepMarker({
   index,
   isDone,
@@ -211,10 +233,10 @@ function StepMarker({
   return (
     <span
       className={cn(
-        "inline-flex size-[26px] shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors",
-        isDone && "bg-success text-white",
-        isActive && "bg-ink-900 text-white",
-        !isDone && !isActive && "bg-surface-sunken text-ink-300",
+        "inline-flex size-[22px] shrink-0 items-center justify-center text-[11px] font-semibold",
+        isDone && "bg-success rounded-md text-white",
+        isActive && "bg-ink-900 rounded-md text-white",
+        !isDone && !isActive && "rounded-full border border-[#DFE3EA] text-[#9AA2AE]",
       )}
     >
       {isDone ? <Check className="size-3" strokeWidth={3} /> : index + 1}

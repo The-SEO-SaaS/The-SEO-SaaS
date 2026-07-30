@@ -103,12 +103,18 @@ export function OnboardingFlow() {
     return (
       <StepShell
         step="site"
+        eyebrow="YOUR SITE"
         title="Which site are we working on?"
         subtitle={
           state.project
-            ? "We crawled this one for your free audit, so the findings carry over. Change it if you'd rather start elsewhere."
+            ? "We crawled this one for your free audit, so the findings carry over. Add a different domain if you'd rather start elsewhere."
             : "Tell us which site to work on and we'll set everything up around it."
         }
+        help={{
+          title: "Takes about three minutes",
+          body: "Everything here can be changed later in Settings.",
+        }}
+        footerNote={state.project ? `Signed in as ${state.project.domain}` : null}
         error={flow.siteError}
         isSubmitting={flow.isSavingSite}
         continueDisabled={!site.domain.trim() || !site.siteType}
@@ -135,11 +141,16 @@ export function OnboardingFlow() {
     return (
       <StepShell
         step="competitors"
+        eyebrow="COMPETITORS"
         title="These already take your terms"
         subtitle="Found during your audit by matching the sites that rank above you. Untick anyone who isn't really a competitor."
+        help={{
+          title: `${flow.selectedCompetitors.size} of ${competitorLimit} slots used`,
+          body: "Starter tracks three competitors. Growth raises it to ten.",
+        }}
+        footerNote="We check their new pages weekly and log what changed"
         error={flow.competitorsError}
         isSubmitting={flow.isSavingCompetitors}
-        meta={`${flow.selectedCompetitors.size} of ${competitorLimit} slots used`}
         onBack={flow.back}
         continueDisabled={!projectId}
         onContinue={async () => {
@@ -172,11 +183,16 @@ export function OnboardingFlow() {
     return (
       <StepShell
         step="keywords"
+        eyebrow="KEYWORDS"
         title="What should we watch every week?"
-        subtitle="Pulled from your audit — the gaps your competitors hold, plus terms your buyers are searching. We've pre-selected the ones with the clearest upside."
+        subtitle="Pulled from pages you already rank for, plus gaps your competitors hold. We've pre-selected the ones with the clearest upside."
+        help={{
+          title: `${flow.selectedKeywords.size} selected of ${keywordLimit}`,
+          body: "Start narrow. You can add more from the Keywords page whenever you like.",
+        }}
+        footerNote={`${flow.selectedKeywords.size} keywords selected`}
         error={flow.keywordsError}
         isSubmitting={flow.isSavingKeywords}
-        meta={`${flow.selectedKeywords.size} of ${keywordLimit} selected`}
         onBack={flow.back}
         continueDisabled={!projectId || flow.selectedKeywords.size === 0}
         onContinue={async () => {
@@ -205,11 +221,16 @@ export function OnboardingFlow() {
   return (
     <StepShell
       step="plan"
+      eyebrow="PLAN"
       title="Pick the limits that fit"
       subtitle="Every plan includes every feature. The only difference is how much you can track and generate each month."
+      help={{
+        title: "Monthly article quota",
+        body: "Audits and rank checks are unlimited on every plan.",
+      }}
+      footerNote="You'll be sent to secure checkout. Nothing is charged until you confirm."
       error={checkout.error}
       isSubmitting={checkout.isRedirecting}
-      meta="You'll be sent to secure checkout. Nothing is charged until you confirm there."
       onBack={flow.back}
       continueLabel="Continue to checkout"
       continueDisabled={!plan}

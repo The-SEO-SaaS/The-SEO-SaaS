@@ -1,10 +1,16 @@
 "use client";
 
-import { Badge } from "@theseosaas/ui/components/badge";
 import { Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
-import { CheckCircle2 } from "lucide-react";
-import * as React from "react";
+import {
+  Check,
+  CheckCircle2,
+  FileText,
+  LayoutGrid,
+  MapPin,
+  ShoppingBag,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { OnboardingState, SitePlatform, SiteType } from "@/lib/api";
 
@@ -17,11 +23,16 @@ import type { OnboardingState, SitePlatform, SiteType } from "@/lib/api";
  * feature page and an ecommerce collection page are different briefs.
  */
 
-const SITE_TYPES: { value: SiteType; label: string; hint: string }[] = [
-  { value: "SAAS", label: "SaaS", hint: "Features, pricing, docs" },
-  { value: "ECOMMERCE", label: "Ecommerce", hint: "Products, collections, reviews" },
-  { value: "CONTENT", label: "Content", hint: "Blog, media, newsletter" },
-  { value: "LOCAL", label: "Local", hint: "Storefront, service area" },
+const SITE_TYPES: {
+  value: SiteType;
+  label: string;
+  hint: string;
+  icon: LucideIcon;
+}[] = [
+  { value: "ECOMMERCE", label: "Ecommerce", hint: "Products, collections, reviews", icon: ShoppingBag },
+  { value: "SAAS", label: "SaaS", hint: "Features, pricing, docs", icon: LayoutGrid },
+  { value: "CONTENT", label: "Content", hint: "Blog, media, newsletter", icon: FileText },
+  { value: "LOCAL", label: "Local", hint: "Storefront, service area", icon: MapPin },
 ];
 
 const PLATFORMS: { value: SitePlatform; label: string }[] = [
@@ -54,24 +65,28 @@ export function SiteStep({
           Domain
         </label>
 
+        {/*
+          The verified chip sits inside the field, as in the design — beside
+          the value it's vouching for rather than as a line underneath it.
+        */}
         <div className="bg-surface border-line focus-within:border-ink-900 focus-within:ring-ring/10 flex items-center gap-1.5 rounded-lg border px-3 py-2.5 transition-colors focus-within:ring-2">
-          <span className="text-ink-300 shrink-0 text-base">https://</span>
+          <span className="shrink-0 text-[13.5px] text-[#9AA2AE]">https://</span>
           <input
             id="domain"
             value={value.domain}
             onChange={(event) => onChange({ ...value, domain: event.target.value })}
-            className="text-ink-900 min-w-0 flex-1 bg-transparent text-base outline-none"
+            className="text-ink-900 min-w-0 flex-1 bg-transparent text-[14.5px] outline-none"
             spellCheck={false}
             inputMode="url"
           />
-        </div>
 
-        {state.project?.pagesCrawled ? (
-          <div className="text-success-strong flex items-center gap-1.5 text-sm">
-            <CheckCircle2 className="size-3.5 shrink-0" />
-            Verified · {state.project.pagesCrawled} pages crawled
-          </div>
-        ) : null}
+          {state.project?.pagesCrawled ? (
+            <span className="border-success-line bg-success-surface text-success-strong inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-[11.5px] font-medium">
+              <CheckCircle2 className="size-3 shrink-0" />
+              Verified · {state.project.pagesCrawled} pages
+            </span>
+          ) : null}
+        </div>
       </section>
 
       <section className="space-y-3">
@@ -82,14 +97,15 @@ export function SiteStep({
           </p>
         </div>
 
-        <Stagger className="grid gap-2.5 sm:grid-cols-2" whenInView={false}>
+        <Stagger className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4" whenInView={false}>
           {SITE_TYPES.map((type) => (
-            <StaggerItem key={type.value}>
+            <StaggerItem key={type.value} className="h-full">
               <OptionCard
                 selected={value.siteType === type.value}
                 onSelect={() => onChange({ ...value, siteType: type.value })}
                 label={type.label}
                 hint={type.hint}
+                icon={type.icon}
               />
             </StaggerItem>
           ))}
@@ -120,7 +136,7 @@ export function SiteStep({
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-sm-plus font-medium transition-colors",
                 value.platform === platform.value
-                  ? "border-ink-900 bg-ink-900 text-white"
+                  ? "border-ink-900 text-ink-900 font-semibold"
                   : "border-line text-ink-500 hover:border-line-strong",
               )}
             >
@@ -133,16 +149,22 @@ export function SiteStep({
   );
 }
 
+/**
+ * Selection is marked by a filled check disc in the corner, per the design —
+ * not a "Selected" badge, which competes with the label for attention.
+ */
 function OptionCard({
   selected,
   onSelect,
   label,
   hint,
+  icon: Icon,
 }: {
   selected: boolean;
   onSelect: () => void;
   label: string;
   hint: string;
+  icon: LucideIcon;
 }) {
   return (
     <button
@@ -150,18 +172,29 @@ function OptionCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex w-full items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
+        "relative flex h-full w-full flex-col items-start gap-2.5 rounded-xl border p-4 text-left transition-colors",
         selected
           ? "border-ink-900 ring-ink-900/5 bg-surface ring-2"
           : "border-line bg-surface hover:border-line-strong",
       )}
     >
+      <Icon
+        className={cn("size-[18px]", selected ? "text-ink-900" : "text-[#9AA2AE]")}
+        strokeWidth={1.7}
+      />
+
       <span className="min-w-0">
-        <span className="text-ink-900 block text-base font-medium">{label}</span>
-        <span className="text-ink-400 block text-sm">{hint}</span>
+        <span className="text-ink-900 block text-[14px] font-semibold tracking-[-0.01em]">
+          {label}
+        </span>
+        <span className="mt-0.5 block text-[12px] leading-[1.5] text-[#6B7480]">{hint}</span>
       </span>
 
-      {selected ? <Badge tone="ink">Selected</Badge> : null}
+      {selected ? (
+        <span className="bg-ink-900 absolute top-3 right-3 inline-flex size-[18px] items-center justify-center rounded-full text-white">
+          <Check className="size-2.5" strokeWidth={3} />
+        </span>
+      ) : null}
     </button>
   );
 }
