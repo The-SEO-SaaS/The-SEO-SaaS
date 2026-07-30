@@ -28,6 +28,8 @@ const iconTileVariants = cva(
       size: {
         xs: "size-5 rounded-sm [&_svg]:size-3",
         sm: "size-[22px] rounded-[7px] [&_svg]:size-3.5",
+        /** Marketing header logo mark: 28px / 8px radius / 14px glyph. */
+        brand: "size-[28px] rounded-[8px] [&_svg]:size-[14px]",
         md: "size-[30px] rounded-[9px] [&_svg]:size-4",
         lg: "size-10 rounded-xl [&_svg]:size-[18px]",
         xl: "size-12 rounded-2xl [&_svg]:size-5",
