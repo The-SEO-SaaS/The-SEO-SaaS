@@ -216,8 +216,12 @@ export interface OnboardingState {
 }
 
 export const onboardingApi = {
-  state: (signal?: AbortSignal) =>
-    http.get<OnboardingState>("/onboarding", { signal }),
+  /** `projectId` reuses this same flow for "add another site" — see useAddSite. */
+  state: (signal?: AbortSignal, projectId?: string) =>
+    http.get<OnboardingState>("/onboarding", {
+      signal,
+      params: projectId ? { projectId } : undefined,
+    }),
 
   saveSite: (input: {
     domain: string;
@@ -250,6 +254,80 @@ export const billingApi = {
 
   /** Dodo's hosted portal — card changes, invoices, self-serve cancellation. */
   portal: () => http.post<{ url: string }>("/billing/portal"),
+};
+
+// --- Sites / dashboard -------------------------------------------------------
+
+export interface SiteSummary {
+  id: string;
+  domain: string;
+  name: string;
+  score: number | null;
+  createdAt: string;
+}
+
+export interface AddSiteQuota {
+  used: number;
+  limit: number;
+  canAdd: boolean;
+}
+
+export interface CompetitorStanding {
+  domain: string;
+  name: string | null;
+  notes: string | null;
+  sharedTerms: number;
+  bestPosition: number | null;
+}
+
+export interface ScoreHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface AveragePositionPoint {
+  date: string;
+  averagePosition: number;
+}
+
+export interface NextAction {
+  opportunityId: string;
+  title: string;
+  rationale: string;
+  keywords: string[];
+  reportUrl: string | null;
+}
+
+export interface SiteDashboard {
+  project: { id: string; domain: string; name: string; createdAt: string };
+  score: {
+    current: number | null;
+    technicalHealth: number | null;
+    band: "POOR" | "FAIR" | "GOOD" | null;
+    verdict: string | null;
+    history: ScoreHistoryPoint[];
+  };
+  figures: {
+    openIssues: { critical: number; warning: number; notice: number };
+    opportunityCount: number;
+    averagePosition: number | null;
+  };
+  competitors: CompetitorStanding[];
+  averagePositionTrend: AveragePositionPoint[] | null;
+  nextAction: NextAction | null;
+  quota: {
+    competitors: { used: number; limit: number };
+    keywords: { used: number; limit: number };
+  };
+  hasCompletedAudit: boolean;
+}
+
+export const sitesApi = {
+  list: (signal?: AbortSignal) =>
+    http.get<{ sites: SiteSummary[]; addSiteQuota: AddSiteQuota }>("/sites", { signal }),
+
+  dashboard: (projectId: string, signal?: AbortSignal) =>
+    http.get<SiteDashboard>(`/sites/${projectId}`, { signal }),
 };
 
 export const contentApi = {
