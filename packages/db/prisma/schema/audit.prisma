@@ -40,6 +40,14 @@ model Audit {
   leadEmail    String?
   leadClaimed  Boolean @default(false)
 
+  /// Set when someone asks to be told the moment this run finishes — the
+  /// onboarding "email me when the crawl finishes" button. Separate from
+  /// leadEmail because that address is a marketing capture from the free
+  /// funnel, while this is a one-off notification the user explicitly asked
+  /// for. Cleared once sent, so a retried job can't email twice.
+  notifyEmail  String?
+  notifiedAt   DateTime?
+
   status      AuditStatus @default(QUEUED)
   currentStep AuditStep?
   progress    Int         @default(0)
