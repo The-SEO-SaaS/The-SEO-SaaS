@@ -330,6 +330,104 @@ export const sitesApi = {
     http.get<SiteDashboard>(`/sites/${projectId}`, { signal }),
 };
 
+// --- Keywords ----------------------------------------------------------------
+
+export type KeywordIntent = KeywordGap["intent"];
+
+export interface KeywordRow {
+  id: string;
+  term: string;
+  intent: KeywordIntent;
+  source: "AUDIT" | "MANUAL" | "COMPETITOR";
+  rationale: string | null;
+  isTracked: boolean;
+  position: number | null;
+  url: string | null;
+  /** Negative is an improvement — rank moved closer to #1. */
+  change: number | null;
+  trend: number[];
+  isPending: boolean;
+}
+
+export interface KeywordGapRow {
+  term: string;
+  intent: KeywordIntent;
+  rationale: string | null;
+  heldBy: string | null;
+}
+
+export interface KeywordsPayload {
+  keywords: KeywordRow[];
+  gaps: KeywordGapRow[];
+  summary: { tracked: number; ranking: number; topTen: number; notRanking: number };
+  quota: { used: number; limit: number; canAdd: boolean };
+}
+
+export const keywordsApi = {
+  list: (projectId: string, signal?: AbortSignal) =>
+    http.get<KeywordsPayload>(`/sites/${projectId}/keywords`, { signal }),
+
+  add: (projectId: string, input: { terms: string[]; intent?: KeywordIntent }) =>
+    http.post<{ added: number; duplicates: string[] }>(
+      `/sites/${projectId}/keywords`,
+      input,
+    ),
+
+  trackGaps: (projectId: string, gapTerms: string[]) =>
+    http.post<{ added: number; duplicates: string[] }>(`/sites/${projectId}/keywords`, {
+      gapTerms,
+    }),
+
+  setTracked: (projectId: string, keywordId: string, isTracked: boolean) =>
+    http.patch<{ ok: true }>(`/sites/${projectId}/keywords/${keywordId}`, { isTracked }),
+
+  remove: (projectId: string, keywordId: string) =>
+    http.delete<{ ok: true }>(`/sites/${projectId}/keywords/${keywordId}`),
+};
+
+// --- Competitors -------------------------------------------------------------
+
+export interface CompetitorStanding {
+  id: string;
+  domain: string;
+  name: string | null;
+  notes: string | null;
+  beatingUsOn: number;
+  losingToUsOn: number;
+  bestPosition: number | null;
+  averagePosition: number | null;
+  trend: number[];
+  bestPage: { url: string; title: string; whyItMatters: string | null } | null;
+  isPending: boolean;
+}
+
+export interface MatrixRow {
+  keywordId: string;
+  term: string;
+  own: number | null;
+  byCompetitor: Record<string, number | null>;
+  /** Competitor id, or the literal "own". */
+  leader: string | null;
+}
+
+export interface CompetitorsPayload {
+  competitors: CompetitorStanding[];
+  matrix: MatrixRow[];
+  quota: { used: number; limit: number; canAdd: boolean };
+  isAwaitingFirstCheck: boolean;
+}
+
+export const competitorsApi = {
+  list: (projectId: string, signal?: AbortSignal) =>
+    http.get<CompetitorsPayload>(`/sites/${projectId}/competitors`, { signal }),
+
+  add: (projectId: string, input: { domain: string; name?: string }) =>
+    http.post<{ id: string }>(`/sites/${projectId}/competitors`, input),
+
+  remove: (projectId: string, competitorId: string) =>
+    http.delete<{ ok: true }>(`/sites/${projectId}/competitors/${competitorId}`),
+};
+
 export const contentApi = {
   generate: (opportunityId: string) =>
     http.post<{ contentId: string; jobId: string }>("/content/generate", { opportunityId }),
