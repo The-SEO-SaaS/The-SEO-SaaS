@@ -1,4 +1,4 @@
-import { audit, queue, tracking } from "@theseosaas/core";
+import { audit, content, queue, tracking } from "@theseosaas/core";
 
 /**
  * Worker entry point.
@@ -39,6 +39,26 @@ const worker = queue.createWorker({
 
       console.log(`[audit] ${domain} complete`);
       return { auditId };
+    },
+
+    // A single long completion — minutes of wall time, and the most expensive
+    // call the product makes. Same reason as the audit: nowhere near a
+    // serverless request budget.
+    [queue.JOB_TYPES.CONTENT_GENERATE]: async (payload, context) => {
+      const { contentId } = payload as { contentId: string };
+
+      if (!contentId) {
+        throw new Error(
+          `content.generate received a malformed payload: ${JSON.stringify(payload)}`,
+        );
+      }
+
+      console.log(`[content] writing ${contentId} attempt ${context.attempt}`);
+
+      await content.runContentGeneration({ contentId, signal: context.signal });
+
+      console.log(`[content] ${contentId} written`);
+      return { contentId };
     },
 
     // Self-perpetuating: each run schedules the next one 24h out, so this

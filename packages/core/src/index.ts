@@ -24,6 +24,7 @@ export * as onboarding from "./onboarding/index.ts";
 export * as projects from "./projects/index.ts";
 export * as keywords from "./keywords/index.ts";
 export * as competitors from "./competitors/index.ts";
+export * as content from "./content/index.ts";
 export * as ai from "./ai/index.ts";
 export * as search from "./search/index.ts";
 export * as queue from "./queue/index.ts";
