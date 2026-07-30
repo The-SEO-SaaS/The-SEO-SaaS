@@ -242,8 +242,30 @@ export const onboardingApi = {
     terms: { term: string; intent?: KeywordGap["intent"]; rationale?: string }[];
   }) => http.post<{ tracked: number }>("/onboarding/keywords", input),
 
-  complete: () => http.post<{ ok: true }>("/onboarding/complete"),
+  complete: () => http.post<CompleteOnboardingResult>("/onboarding/complete"),
+
+  /** Opts into a one-off "your crawl finished" email for that run. */
+  notifyOnComplete: (publicId: string) =>
+    http.post<{ ok: boolean }>("/onboarding/notify", { publicId }),
 };
+
+export interface CompleteOnboardingResult {
+  /** Null when the user reached the end without a claimed audit. */
+  firstCrawl: {
+    publicId: string;
+    /** True when we're watching the audit that carried over from the free
+     *  funnel rather than a fresh run queued just now. */
+    reused: boolean;
+  } | null;
+  project: { id: string; domain: string } | null;
+  plan: { id: PlanId; name: string; articlesPerMonth: number };
+  /** The setup screen's "waiting for you" panel. */
+  waiting: {
+    criticalFindings: number;
+    briefs: number;
+    trackedKeywords: number;
+  };
+}
 
 // --- Billing -----------------------------------------------------------------
 
@@ -342,6 +364,13 @@ export interface NextAction {
   reportUrl: string | null;
 }
 
+export interface QueuedAction {
+  opportunityId: string;
+  title: string;
+  rationale: string;
+  keywords: string[];
+}
+
 export interface SiteDashboard {
   project: { id: string; domain: string; name: string; createdAt: string };
   score: {
@@ -353,12 +382,26 @@ export interface SiteDashboard {
   };
   figures: {
     openIssues: { critical: number; warning: number; notice: number };
+    /** Negative is an improvement. Null until a second audit exists. */
+    openIssuesChange: number | null;
+    /** Oldest-first issue totals per audit. Empty below 2 points. */
+    openIssuesHistory: number[];
     opportunityCount: number;
     averagePosition: number | null;
+    /** Negative is an improvement. */
+    averagePositionChange: number | null;
   };
   competitors: CompetitorStanding[];
   averagePositionTrend: AveragePositionPoint[] | null;
   nextAction: NextAction | null;
+  queuedActions: QueuedAction[];
+  /** The design's "content in flight" table. Newest first. */
+  contentInFlight: {
+    id: string;
+    title: string;
+    target: string | null;
+    status: ContentStatus;
+  }[];
   quota: {
     competitors: { used: number; limit: number };
     keywords: { used: number; limit: number };
@@ -372,6 +415,84 @@ export const sitesApi = {
 
   dashboard: (projectId: string, signal?: AbortSignal) =>
     http.get<SiteDashboard>(`/sites/${projectId}`, { signal }),
+};
+
+// --- Content -----------------------------------------------------------------
+
+export type ContentStatus =
+  | "DRAFT"
+  | "GENERATING"
+  | "GENERATED"
+  | "PUBLISHED"
+  | "ARCHIVED"
+  | "FAILED";
+
+export interface BriefSummary {
+  id: string;
+  title: string;
+  /** "From keyword gap: cold brew subscription" — the design's source line. */
+  source: string;
+  angle: string;
+  sections: { heading: string; covers: string }[];
+  keywords: string[];
+  wordTarget: number;
+  hasPost: boolean;
+  createdAt: string;
+}
+
+export interface PostSummary {
+  id: string;
+  title: string;
+  source: string;
+  status: ContentStatus;
+  keywords: string[];
+  wordCount: number | null;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface ContentLibrary {
+  site: { id: string; domain: string };
+  briefs: BriefSummary[];
+  posts: PostSummary[];
+  availableOpportunities: { id: string; title: string; rationale: string; keywords: string[] }[];
+  /** `limit: -1` means unlimited. */
+  quota: { used: number; limit: number; remaining: number; periodEnd: string };
+}
+
+export interface ContentDetail {
+  id: string;
+  projectId: string;
+  title: string;
+  status: ContentStatus;
+  /** Markdown. Null until generation finishes. */
+  body: string | null;
+  keywords: string[];
+  source: string;
+  metaDescription: string | null;
+  wordCount: number | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const contentApi = {
+  library: (projectId: string, signal?: AbortSignal) =>
+    http.get<ContentLibrary>(`/sites/${projectId}/content`, { signal }),
+
+  /** Free on every plan, and runs inline — the response carries the brief. */
+  createBrief: (projectId: string, opportunityId: string) =>
+    http.post<BriefSummary>(`/sites/${projectId}/content`, { opportunityId }),
+
+  /** Costs one article from the month's allowance; the worker writes it. */
+  writePost: (projectId: string, briefId: string) =>
+    http.post<{ contentId: string }>(`/sites/${projectId}/content`, { briefId }),
+
+  item: (contentId: string, signal?: AbortSignal) =>
+    http.get<ContentDetail>(`/content/${contentId}`, { signal }),
+
+  setStatus: (contentId: string, status: "PUBLISHED" | "ARCHIVED" | "GENERATED") =>
+    http.patch<{ ok: boolean }>(`/content/${contentId}`, { status }),
 };
 
 // --- Audit history -----------------------------------------------------------
@@ -388,6 +509,8 @@ export interface AuditHistoryEntry {
   pagesCrawled: number;
   summary: string | null;
   createdAt: string;
+  /** When the worker picked it up — the run header times from here. */
+  startedAt: string | null;
   completedAt: string | null;
 }
 
