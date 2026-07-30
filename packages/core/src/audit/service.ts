@@ -32,6 +32,8 @@ const REUSE_WINDOW_MS = 1000 * 60 * 60 * 24;
 export interface StartAuditResult {
   id: string;
   publicId: string;
+  /** Normalised here, and returned so the crawl screen can render it at once. */
+  domain: string;
   status: string;
   reused: boolean;
 }
@@ -64,7 +66,7 @@ export async function startAudit(
   });
 
   if (recent) {
-    return { ...recent, reused: true };
+    return { ...recent, domain, reused: true };
   }
 
   // An audit already running for this domain — return it instead of starting
@@ -76,7 +78,7 @@ export async function startAudit(
   });
 
   if (inFlight) {
-    return { ...inFlight, reused: true };
+    return { ...inFlight, domain, reused: true };
   }
 
   await consumeRateLimit(
@@ -102,7 +104,7 @@ export async function startAudit(
     data: { jobId: job.id },
   });
 
-  return { ...audit, reused: false };
+  return { ...audit, domain, reused: false };
 }
 
 export async function getAuditProgress(publicId: string) {
@@ -111,6 +113,9 @@ export async function getAuditProgress(publicId: string) {
     select: {
       id: true,
       publicId: true,
+      // The crawl screen shows the domain it's working on, so it has to come
+      // back with progress rather than waiting on the (not-yet-ready) report.
+      domain: true,
       status: true,
       currentStep: true,
       progress: true,
@@ -123,6 +128,7 @@ export async function getAuditProgress(publicId: string) {
   return {
     id: audit.id,
     publicId: audit.publicId,
+    domain: audit.domain,
     status: audit.status,
     currentStep: audit.currentStep,
     progress: audit.progress,
@@ -217,6 +223,8 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     competitors?: RawCompetitor[];
     keywords?: RawKeyword[];
     keywordHeadline?: string | null;
+    /** Second half of the score split; the strip in the report head shows both. */
+    contentHealth?: number;
     band?: "POOR" | "FAIR" | "GOOD";
     counts?: { critical: number; warning: number; notice: number };
     healthy?: string[];
@@ -245,6 +253,7 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     status: audit.status,
     score: audit.score,
     technicalHealth: audit.technicalHealth,
+    contentHealth: raw.contentHealth ?? null,
     band: raw.band ?? null,
     summary: audit.summary,
 

@@ -49,6 +49,8 @@ export type OpportunityType =
 export interface AuditProgress {
   id: string;
   publicId: string;
+  /** Shown on the crawl screen, which renders before the report exists. */
+  domain: string;
   status: AuditStatus;
   currentStep: AuditStep | null;
   progress: number;
@@ -105,6 +107,8 @@ export interface AuditReport {
   status: AuditStatus;
   score: number | null;
   technicalHealth: number | null;
+  /** Paired with technicalHealth in the report head's category strip. */
+  contentHealth: number | null;
   /** Matches the design's 0–49 / 50–74 / 75+ bands. */
   band: "POOR" | "FAIR" | "GOOD" | null;
   /** Consultant verdict shown instead of a bare number. */

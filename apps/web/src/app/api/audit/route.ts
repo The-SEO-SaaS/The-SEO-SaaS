@@ -25,6 +25,7 @@ export const POST = handler(async (request: NextRequest) => {
     {
       id: result.id,
       publicId: result.publicId,
+      domain: result.domain,
       status: result.status,
       currentStep: null,
       progress: 0,
