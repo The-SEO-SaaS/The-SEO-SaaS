@@ -1,4 +1,4 @@
-import { audit, queue } from "@theseosaas/core";
+import { audit, queue, tracking } from "@theseosaas/core";
 
 /**
  * Worker entry point.
@@ -40,6 +40,16 @@ const worker = queue.createWorker({
       console.log(`[audit] ${domain} complete`);
       return { auditId };
     },
+
+    // Self-perpetuating: each run schedules the next one 24h out, so this
+    // never needs external cron infrastructure. See tracking/refresh.ts.
+    [queue.JOB_TYPES.KEYWORD_REFRESH]: async () => {
+      const result = await tracking.runKeywordRefreshSweep();
+      console.log(
+        `[keyword-refresh] checked ${result.checked} keyword(s), ${result.creditsUsed} credit(s) used`,
+      );
+      return result;
+    },
   },
 
   onError: (error, job) => {
@@ -67,6 +77,10 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("unhandledRejection", (reason) => {
   console.error("[worker] unhandled rejection:", reason);
 });
+
+// Idempotent — only seeds a sweep if one isn't already pending/running, so
+// restarting the worker in dev never spawns a second perpetual chain.
+await tracking.ensureKeywordRefreshScheduled();
 
 console.log(`[worker] started, concurrency ${CONCURRENCY}`);
 await worker.start();
