@@ -23,6 +23,7 @@
   "dependencies": {
     "@theseosaas/env": "workspace:*",
     "dotenv": "catalog:",
+    "framer-motion": "^12.43.0",
     "zod": "catalog:"
   },
   "devDependencies": {

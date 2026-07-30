@@ -56,6 +56,9 @@ importers:
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
+      framer-motion:
+        specifier: ^12.43.0
+        version: 12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       zod:
         specifier: 'catalog:'
         version: 4.4.3
