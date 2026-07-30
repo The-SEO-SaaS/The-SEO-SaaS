@@ -11,3 +11,5 @@ export {
   type KeywordIntent,
   type AddKeywordsResult,
 } from "./service.ts";
+
+export { scoreSerp, type SerpSignals, type DemandBand } from "./serp-signals.ts";

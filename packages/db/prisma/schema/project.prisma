@@ -102,6 +102,15 @@ enum KeywordIntent {
   NAVIGATIONAL
 }
 
+/// How commercially contested a term looks, from its SERP composition.
+/// Three bands on purpose — the signals behind it cannot support finer
+/// resolution, and this is not a traffic estimate.
+enum KeywordDemand {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 enum KeywordSource {
   AUDIT
   MANUAL
@@ -121,6 +130,17 @@ model Keyword {
 
   /// Consultant-voice rationale, e.g. "buyers comparing tools search this".
   rationale String?
+
+  /// Our own 0–100 difficulty estimate, derived from who currently holds the
+  /// top results. Deliberately not called KD: it is not Ahrefs' or Semrush's
+  /// metric and should never be compared against one. Recomputed on every
+  /// rank sweep, so it moves only when the SERP does.
+  difficulty Int?
+
+  /// How commercially contested the term looks. NOT search volume — a SERP
+  /// response contains no demand figure, so this is a three-way band and the
+  /// UI labels it as such. See core/keywords/serp-signals.ts.
+  demand KeywordDemand?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,5 +1,6 @@
 import prisma from "@theseosaas/db";
 
+import { scoreSerp } from "../keywords/serp-signals.ts";
 import { enqueue, JOB_TYPES } from "../queue/index.ts";
 import { search } from "../search/serpex.ts";
 
@@ -66,7 +67,19 @@ async function recordPositions(keyword: {
     select: { id: true, domain: true },
   });
 
+  // Free: this SERP is already paid for and in memory. Scoring it here is what
+  // keeps difficulty current without a second provider or a second call.
+  const signals = scoreSerp(keyword.term, response.results);
+
   await prisma.$transaction([
+    ...(signals
+      ? [
+          prisma.keyword.update({
+            where: { id: keyword.id },
+            data: { difficulty: signals.difficulty, demand: signals.demand },
+          }),
+        ]
+      : []),
     prisma.keywordRanking.create({
       data: {
         keywordId: keyword.id,
