@@ -61,7 +61,8 @@ model Competitor {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  pages CompetitorPage[]
+  pages    CompetitorPage[]
+  rankings CompetitorRanking[]
 
   @@unique([projectId, domain])
   @@index([projectId])
@@ -124,7 +125,8 @@ model Keyword {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rankings KeywordRanking[]
+  rankings           KeywordRanking[]
+  competitorRankings CompetitorRanking[]
 
   @@unique([projectId, term])
   @@index([projectId, isTracked])
@@ -140,5 +142,27 @@ model KeywordRanking {
   url       String?
   checkedAt DateTime @default(now())
 
+  @@index([keywordId, checkedAt])
+}
+
+/// Where a tracked competitor sits for one of our tracked keywords.
+///
+/// Comes free: the daily rank sweep already fetches the full SERP for each
+/// keyword to find our own position, so every rival's position is sitting in
+/// that same response. Reading it costs nothing extra and is what makes the
+/// head-to-head matrix real rather than a mockup.
+model CompetitorRanking {
+  id           String     @id @default(cuid())
+  competitorId String
+  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  keywordId    String
+  keyword      Keyword    @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  /// Null means they didn't appear in the result window for this term.
+  position  Int?
+  url       String?
+  checkedAt DateTime @default(now())
+
+  @@index([competitorId, checkedAt])
   @@index([keywordId, checkedAt])
 }
