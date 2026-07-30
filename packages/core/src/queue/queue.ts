@@ -1,5 +1,4 @@
-import prisma from "@theseosaas/db";
-import { Prisma } from "@theseosaas/db/client";
+import prisma, { type Prisma } from "@theseosaas/db";
 
 /**
  * Postgres-backed job queue.
