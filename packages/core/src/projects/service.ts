@@ -29,6 +29,9 @@ export interface SiteSummary {
   name: string;
   /** Null until the site has a completed audit. */
   score: number | null;
+  /** Sidebar badges. Tracked keywords and competitors, per the design. */
+  keywordCount: number;
+  competitorCount: number;
   createdAt: string;
 }
 
@@ -47,6 +50,13 @@ export async function listSites(userId: string): Promise<SiteSummary[]> {
         take: 1,
         select: { score: true },
       },
+      // Counted rather than loaded — the sidebar only shows the totals.
+      _count: {
+        select: {
+          keywords: { where: { isTracked: true } },
+          competitors: true,
+        },
+      },
     },
   });
 
@@ -55,6 +65,8 @@ export async function listSites(userId: string): Promise<SiteSummary[]> {
     domain: project.domain,
     name: project.name,
     score: project.audits[0]?.score ?? null,
+    keywordCount: project._count.keywords,
+    competitorCount: project._count.competitors,
     createdAt: project.createdAt.toISOString(),
   }));
 }

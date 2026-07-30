@@ -304,6 +304,9 @@ export interface SiteSummary {
   domain: string;
   name: string;
   score: number | null;
+  /** Sidebar badges. */
+  keywordCount: number;
+  competitorCount: number;
   createdAt: string;
 }
 
