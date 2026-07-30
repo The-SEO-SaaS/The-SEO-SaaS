@@ -38,6 +38,18 @@ export const env = createEnv({
     DODO_API_KEY: z.string().min(1).optional(),
     DODO_WEBHOOK_SECRET: z.string().min(1).optional(),
     DODO_ENVIRONMENT: z.enum(["test_mode", "live_mode"]).default("test_mode"),
+
+    /**
+     * Six Dodo products: three plans × monthly/yearly. Optional at the schema
+     * level (same as DODO_API_KEY) so the app boots without billing configured;
+     * `productIdFor` throws a clear error at call time if one is missing.
+     */
+    DODO_PRODUCT_STARTER_MONTHLY: z.string().min(1).optional(),
+    DODO_PRODUCT_STARTER_YEARLY: z.string().min(1).optional(),
+    DODO_PRODUCT_GROWTH_MONTHLY: z.string().min(1).optional(),
+    DODO_PRODUCT_GROWTH_YEARLY: z.string().min(1).optional(),
+    DODO_PRODUCT_SCALE_MONTHLY: z.string().min(1).optional(),
+    DODO_PRODUCT_SCALE_YEARLY: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
