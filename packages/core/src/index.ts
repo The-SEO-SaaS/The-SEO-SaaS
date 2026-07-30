@@ -22,6 +22,8 @@ export * as auth from "./auth/index.js";
 export * as audit from "./audit/index.js";
 export * as onboarding from "./onboarding/index.js";
 export * as projects from "./projects/index.js";
+export * as keywords from "./keywords/index.js";
+export * as competitors from "./competitors/index.js";
 export * as ai from "./ai/index.js";
 export * as search from "./search/index.js";
 export * as queue from "./queue/index.js";
