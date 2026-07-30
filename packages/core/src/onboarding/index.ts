@@ -5,9 +5,11 @@ export {
   saveCompetitorsStep,
   saveKeywordsStep,
   completeOnboarding,
+  notifyWhenAuditCompletes,
   siteStepSchema,
   competitorsStepSchema,
   keywordsStepSchema,
   type OnboardingStep,
   type OnboardingState,
+  type CompleteOnboardingResult,
 } from "./service.ts";

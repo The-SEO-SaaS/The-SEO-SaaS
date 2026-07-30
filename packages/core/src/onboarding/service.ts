@@ -1,6 +1,7 @@
 import prisma from "@theseosaas/db";
 import { z } from "zod";
 
+import { rerunAudit } from "../audit/history.ts";
 import { PLANS, type PlanId } from "../billing/plans.ts";
 import { AppError } from "../errors.ts";
 import { normalizeDomain } from "../util/domain.ts";
@@ -382,7 +383,41 @@ export async function saveKeywordsStep(
 
 // --- Completion ------------------------------------------------------------
 
-export async function completeOnboarding(userId: string): Promise<void> {
+/**
+ * How recent the carried-over free audit has to be for us to skip the first
+ * tracked crawl. Signing up straight after running the free audit is the
+ * common path, and re-crawling the same site minutes later costs real provider
+ * spend to produce the same findings.
+ */
+const FIRST_CRAWL_STALE_MS = 1000 * 60 * 60 * 6;
+
+export interface CompleteOnboardingResult {
+  /**
+   * The run the "you're set up" screen watches. `reused` means we're pointing
+   * at the audit that carried over from the free funnel rather than paying for
+   * a fresh one.
+   */
+  firstCrawl: { publicId: string; reused: boolean } | null;
+
+  project: { id: string; domain: string } | null;
+
+  plan: { id: PlanId; name: string; articlesPerMonth: number };
+
+  /**
+   * The design's "waiting for you" panel. Returned here rather than fetched
+   * separately so the screen renders complete on its first paint — it appears
+   * immediately after a payment redirect, which is the worst moment to show
+   * three loading skeletons.
+   */
+  waiting: {
+    criticalFindings: number;
+    /** Suggested opportunities — the design calls these article briefs. */
+    briefs: number;
+    trackedKeywords: number;
+  };
+}
+
+export async function completeOnboarding(userId: string): Promise<CompleteOnboardingResult> {
   const plan = await getPlan(userId);
   if (!plan) {
     throw AppError.paymentRequired("Choose a plan to finish setting up.");
@@ -391,6 +426,127 @@ export async function completeOnboarding(userId: string): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
     data: { onboardedAt: new Date() },
+  });
+
+  const definition = PLANS[plan];
+  const planSummary = {
+    id: plan,
+    name: definition.name,
+    articlesPerMonth: definition.limits.aiBlogPostsPerMonth,
+  };
+
+  const project = await prisma.project.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, domain: true },
+  });
+
+  // No project means the user reached the end without a claimed audit. Nothing
+  // to crawl, and the done screen handles a null run.
+  if (!project) {
+    return {
+      firstCrawl: null,
+      project: null,
+      plan: planSummary,
+      waiting: { criticalFindings: 0, briefs: 0, trackedKeywords: 0 },
+    };
+  }
+
+  const [latestCompleted, briefs, trackedKeywords] = await Promise.all([
+    prisma.audit.findFirst({
+      where: { projectId: project.id, status: "COMPLETED" },
+      orderBy: { completedAt: "desc" },
+      select: { rawData: true },
+    }),
+    prisma.opportunity.count({ where: { projectId: project.id, status: "SUGGESTED" } }),
+    prisma.keyword.count({ where: { projectId: project.id, isTracked: true } }),
+  ]);
+
+  const counts = ((latestCompleted?.rawData ?? {}) as {
+    counts?: { critical: number };
+  }).counts;
+
+  const waiting = {
+    criticalFindings: counts?.critical ?? 0,
+    briefs,
+    trackedKeywords,
+  };
+
+  const inFlight = await prisma.audit.findFirst({
+    where: { projectId: project.id, status: { in: ["QUEUED", "RUNNING"] } },
+    orderBy: { createdAt: "desc" },
+    select: { publicId: true },
+  });
+
+  if (inFlight) {
+    return {
+      firstCrawl: { publicId: inFlight.publicId, reused: true },
+      project,
+      plan: planSummary,
+      waiting,
+    };
+  }
+
+  const recent = await prisma.audit.findFirst({
+    where: {
+      projectId: project.id,
+      status: "COMPLETED",
+      completedAt: { gt: new Date(Date.now() - FIRST_CRAWL_STALE_MS) },
+    },
+    orderBy: { completedAt: "desc" },
+    select: { publicId: true },
+  });
+
+  if (recent) {
+    return {
+      firstCrawl: { publicId: recent.publicId, reused: true },
+      project,
+      plan: planSummary,
+      waiting,
+    };
+  }
+
+  const started = await rerunAudit(userId, project.id);
+
+  return {
+    firstCrawl: { publicId: started.publicId, reused: false },
+    project,
+    plan: planSummary,
+    waiting,
+  };
+}
+
+/**
+ * Opts the caller into a one-off "your crawl finished" email.
+ *
+ * Deliberately not an audit-wide preference: it's a single notification the
+ * user asked for on the setup screen, and the worker clears it once sent.
+ */
+export async function notifyWhenAuditCompletes(
+  userId: string,
+  publicId: string,
+): Promise<void> {
+  const [audit, user] = await Promise.all([
+    prisma.audit.findUnique({
+      where: { publicId },
+      select: { id: true, userId: true, status: true },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
+  ]);
+
+  if (!audit || audit.userId !== userId) {
+    throw AppError.notFound("We couldn't find that audit.");
+  }
+  if (!user) throw AppError.unauthorized();
+
+  // Already finished — there's nothing left to wait for, and queueing a mail
+  // for a past event would arrive as a confusing duplicate of the screen the
+  // user is already looking at.
+  if (audit.status === "COMPLETED" || audit.status === "FAILED") return;
+
+  await prisma.audit.update({
+    where: { id: audit.id },
+    data: { notifyEmail: user.email },
   });
 }
 
