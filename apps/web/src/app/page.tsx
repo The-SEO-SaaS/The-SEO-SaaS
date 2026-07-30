@@ -15,6 +15,7 @@ import {
 
 import { AuditInput } from "@/components/marketing/audit-input";
 import { PricingTable } from "@/components/marketing/pricing-table";
+import { ProofCard } from "@/components/marketing/proof-card";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
 
 /**
@@ -99,36 +100,74 @@ export default function LandingPage() {
       <MarketingHeader />
 
       {/* --- Hero ---------------------------------------------------------- */}
-      <section id="hero" className="border-line border-b">
-        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 sm:py-24">
-          <FadeIn from="none">
-            <Badge tone="opportunity" shape="pill" className="mb-5 sm:mb-6">
+      {/*
+        Hero. Design spec: full width, 180px top padding and zero bottom, no
+        border. Headline 56px / 600 / -0.04em / 1.06. Sub 17px / #5B6472/ 1.6.
+        Input row capped at 620px, note 12.5px #6B7480.
+
+        The four proof cards are absolutely positioned in the design's 1280px
+        canvas. They're hidden below `xl`, where they would sit on top of the
+        headline — the design has no mobile view, so that's an adaptation.
+      */}
+      <section
+        id="hero"
+        className="relative flex flex-col items-center px-5 pt-16 sm:px-10 sm:pt-24 xl:pt-[180px]"
+      >
+        <ProofCard
+          className="left-6 top-[148px]"
+          eyebrow="RANKINGS"
+          delta={{ label: "+37", tone: "up" }}
+          title="Keywords on page one"
+          footer="Six months, one site"
+          spark="M0,34 L38,30 L76,24 L114,17 L152,11 L190,5"
+        />
+        <ProofCard
+          className="left-6 top-[368px]"
+          eyebrow="SEO SCORE"
+          title="68 → 74"
+          footer="After the first three fixes"
+        />
+        <ProofCard
+          className="right-6 top-[148px]"
+          eyebrow="COMPETITORS"
+          delta={{ label: "4 tracked", tone: "neutral" }}
+          title="Who takes your terms"
+          footer="Checked every day"
+        />
+        <ProofCard
+          className="right-6 top-[368px]"
+          eyebrow="GAP CLOSED"
+          title="9 keywords recovered"
+          footer="3 articles published"
+          footerCheck
+        />
+
+        <FadeIn from="none" className="max-w-[760px] text-center">
+          <span className="border-line bg-surface inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 whitespace-nowrap shadow-[0_1px_2px_rgba(11,18,32,0.04)]">
+            <span className="bg-ink-900 size-[5px] rounded-full" />
+            <span className="text-ink-900 text-[12px] font-medium">
               Free audit, no account needed
-            </Badge>
-          </FadeIn>
+            </span>
+          </span>
 
-          <FadeIn delay={0.05}>
-            <h1 className="font-display text-ink-900 text-3xl leading-[1.12] font-semibold tracking-tight text-balance sm:text-4xl md:text-5xl">
-              An SEO lead for your site, not another dashboard
-            </h1>
-          </FadeIn>
+          <h1 className="font-display text-ink-900 mt-[26px] text-[34px] leading-[1.06] font-semibold tracking-[-0.04em] text-pretty sm:text-[44px] lg:text-[56px]">
+            An SEO lead for your site, not another dashboard
+          </h1>
 
-          <FadeIn delay={0.1}>
-            <p className="text-ink-400 mx-auto mt-4 max-w-xl text-base leading-relaxed text-pretty sm:mt-5 sm:text-lg">
-              We crawl your site, tell you plainly what&apos;s costing you search traffic, then
-              write the pages that close the gap.
-            </p>
-          </FadeIn>
+          <p className="mx-auto mt-[18px] max-w-[60ch] text-[15px] leading-[1.6] text-[#5B6472] sm:text-[17px]">
+            We crawl your site, tell you plainly what is costing you search traffic, then write
+            the pages that close the gap. Audit, opportunities, drafts, published.
+          </p>
+        </FadeIn>
 
-          <FadeIn delay={0.15}>
-            <div className="mx-auto mt-7 max-w-xl sm:mt-9">
-              <AuditInput />
-            </div>
-            <p className="text-ink-300 mt-3 text-sm">
-              Around two minutes. You get a shareable report link.
-            </p>
-          </FadeIn>
-        </div>
+        <FadeIn delay={0.1} className="w-full max-w-[620px]">
+          <div className="mt-[34px]">
+            <AuditInput />
+          </div>
+          <p className="mt-[13px] text-center text-[12.5px] text-[#6B7480]">
+            About eight minutes for a 400-page site. You get a shareable report link.
+          </p>
+        </FadeIn>
       </section>
 
       {/* --- Problem ------------------------------------------------------- */}
