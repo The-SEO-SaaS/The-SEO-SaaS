@@ -17,16 +17,25 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
 model Subscription {
   id     String @id @default(cuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  plan   Plan
-  status SubscriptionStatus @default(INCOMPLETE)
+  plan     Plan
+  interval BillingInterval    @default(MONTHLY)
+  status   SubscriptionStatus @default(INCOMPLETE)
 
   dodoCustomerId     String?
   dodoSubscriptionId String? @unique
+  /// Which of the six Dodo products this subscription is on. Kept so a plan
+  /// or interval change can be detected from a webhook payload alone.
+  dodoProductId      String?
 
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
@@ -64,16 +73,28 @@ model UsageRecord {
   @@index([userId, periodStart])
 }
 
-/// Idempotency guard for Dodo webhooks — providers retry, we must not
-/// double-apply a plan change.
+/// Idempotency guard for Dodo webhooks.
+///
+/// Dodo retries up to 8 times with backoff and states that events may arrive
+/// out of order, so a replayed delivery must be a no-op. The unique constraint
+/// on (provider, eventId) is what enforces that — the insert fails rather than
+/// the handler running twice.
 model WebhookEvent {
-  id          String   @id @default(cuid())
-  provider    String
-  eventId     String
-  type        String
-  payload     Json
+  id       String @id @default(cuid())
+  provider String
+  /// The `webhook-id` header, which Dodo guarantees unique per event.
+  eventId  String
+  type     String
+  payload  Json
+
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  /// Set when handling threw. Lets us find and replay genuine failures without
+  /// re-running events that already succeeded.
+  failedAt  DateTime?
+  lastError String?
+
+  createdAt DateTime @default(now())
 
   @@unique([provider, eventId])
+  @@index([type, createdAt])
 }
