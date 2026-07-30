@@ -14,6 +14,7 @@ import * as React from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PositionCell, RankSparkline } from "@/components/dashboard/rank-sparkline";
 import { useKeywords } from "@/hooks/use-keywords";
+import { useSites } from "@/hooks/use-sites";
 import type { KeywordIntent, KeywordRow } from "@/lib/api";
 
 /**
@@ -44,6 +45,9 @@ type IntentFilter = KeywordIntent | "ALL";
 
 export function KeywordsView({ projectId }: { projectId: string }) {
   const flow = useKeywords(projectId);
+  // The top bar's breadcrumb shows which site these belong to.
+  const { sites } = useSites();
+  const siteDomain = sites.find((entry) => entry.id === projectId)?.domain ?? null;
   const [query, setQuery] = React.useState("");
   const [intentFilter, setIntentFilter] = React.useState<IntentFilter>("ALL");
   const [newTerms, setNewTerms] = React.useState("");
@@ -113,7 +117,8 @@ export function KeywordsView({ projectId }: { projectId: string }) {
   return (
     <>
       <PageHeader
-        title="Keywords"
+        section="Keywords"
+        current={siteDomain}
         meta={`${quota.used} of ${quota.limit} tracked`}
         action={
           <Button size="sm" onClick={() => setShowAdd((open) => !open)}>

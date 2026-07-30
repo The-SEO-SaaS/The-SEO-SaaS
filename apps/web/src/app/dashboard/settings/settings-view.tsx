@@ -78,7 +78,7 @@ export function SettingsView() {
 
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader section="Settings" current={user.email} />
 
       <main className="flex flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:max-w-4xl lg:px-10">
         {/* Account */}

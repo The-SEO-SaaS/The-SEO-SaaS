@@ -34,13 +34,18 @@ export function SiteSwitcher({ currentSiteId }: { currentSiteId: string }) {
 
   return (
     <DropdownMenu>
+      {/*
+        Reads as the second breadcrumb rather than a button: the design's top
+        bar has plain text there, so the affordance is the chevron and a hover
+        tint, not a border.
+      */}
       <DropdownMenuTrigger
         className={cn(
-          "border-line hover:bg-surface-sunken flex max-w-[220px] items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+          "text-ink-900 hover:bg-surface-sunken flex max-w-[220px] items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] transition-colors",
         )}
       >
         <span className="truncate">{current?.domain ?? "Select a site"}</span>
-        <ChevronsUpDown className="text-ink-300 size-3.5 shrink-0" />
+        <ChevronsUpDown className="size-3 shrink-0 text-[#9AA2AE]" />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent className="w-64 rounded-xl p-1">

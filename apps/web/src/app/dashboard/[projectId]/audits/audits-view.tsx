@@ -62,8 +62,13 @@ export function AuditsView({ projectId }: { projectId: string }) {
   return (
     <>
       <PageHeader
-        title="Audits"
-        meta={history.site.domain}
+        section="Audits"
+        current={history.site.domain}
+        meta={
+          history.audits.length > 0
+            ? `${history.audits.length} run${history.audits.length === 1 ? "" : "s"} on record`
+            : null
+        }
         action={
           <Button
             size="sm"

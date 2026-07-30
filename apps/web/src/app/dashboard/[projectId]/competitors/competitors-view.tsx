@@ -14,6 +14,7 @@ import * as React from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { RankSparkline } from "@/components/dashboard/rank-sparkline";
 import { useCompetitors } from "@/hooks/use-competitors";
+import { useSites } from "@/hooks/use-sites";
 import type { CompetitorStanding, MatrixRow } from "@/lib/api";
 
 /**
@@ -30,6 +31,9 @@ import type { CompetitorStanding, MatrixRow } from "@/lib/api";
  */
 export function CompetitorsView({ projectId }: { projectId: string }) {
   const flow = useCompetitors(projectId);
+  // The top bar's breadcrumb shows which site these belong to.
+  const { sites } = useSites();
+  const siteDomain = sites.find((entry) => entry.id === projectId)?.domain ?? null;
   const [showAdd, setShowAdd] = React.useState(false);
   const [domain, setDomain] = React.useState("");
 
@@ -79,7 +83,8 @@ export function CompetitorsView({ projectId }: { projectId: string }) {
   return (
     <>
       <PageHeader
-        title="Competitors"
+        section="Competitors"
+        current={siteDomain}
         meta={`${quota.used} of ${quota.limit} tracked · refreshed daily`}
         action={
           <Button
