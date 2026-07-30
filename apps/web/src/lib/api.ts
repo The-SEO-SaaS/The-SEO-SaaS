@@ -10,6 +10,9 @@ import { http } from "./api-client";
 
 // --- Shared shapes ---------------------------------------------------------
 
+export type PlanId = "STARTER" | "GROWTH" | "SCALE";
+export type BillingInterval = "MONTHLY" | "YEARLY";
+
 export type AuditStatus = "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
 
 export type AuditStep =
@@ -232,6 +235,21 @@ export const onboardingApi = {
   }) => http.post<{ tracked: number }>("/onboarding/keywords", input),
 
   complete: () => http.post<{ ok: true }>("/onboarding/complete"),
+};
+
+// --- Billing -----------------------------------------------------------------
+
+export const billingApi = {
+  /** Creates a Dodo Checkout Session and returns the hosted URL to redirect to. */
+  checkout: (input: {
+    plan: PlanId;
+    interval: BillingInterval;
+    returnPath?: string;
+    cancelPath?: string;
+  }) => http.post<{ checkoutUrl: string }>("/billing/checkout", input),
+
+  /** Dodo's hosted portal — card changes, invoices, self-serve cancellation. */
+  portal: () => http.post<{ url: string }>("/billing/portal"),
 };
 
 export const contentApi = {
