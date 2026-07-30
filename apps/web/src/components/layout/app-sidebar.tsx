@@ -32,19 +32,38 @@ import * as React from "react";
  * would consume more than half a phone viewport.
  */
 interface NavItem {
-  href: string;
+  /** Appended to /dashboard/[projectId]; empty string is the dashboard itself. */
+  segment: string;
   label: string;
   icon: LucideIcon;
+  /** Account-level rather than per-site, so it sits outside the site scope. */
+  global?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/audits", label: "Audits", icon: FileSearch },
-  { href: "/keywords", label: "Keywords", icon: KeyRound },
-  { href: "/competitors", label: "Competitors", icon: BarChart3 },
-  { href: "/content", label: "Content", icon: PenLine },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { segment: "", label: "Dashboard", icon: LayoutDashboard },
+  { segment: "audits", label: "Audits", icon: FileSearch },
+  { segment: "keywords", label: "Keywords", icon: KeyRound },
+  { segment: "competitors", label: "Competitors", icon: BarChart3 },
+  { segment: "content", label: "Content", icon: PenLine },
+  { segment: "settings", label: "Settings", icon: Settings, global: true },
 ];
+
+/**
+ * Every section except Settings belongs to a specific site, so nav hrefs are
+ * built from the projectId in the current path rather than being static.
+ * Reading it here keeps the layout component from having to thread it down.
+ */
+const RESERVED_SEGMENTS = new Set(["sites", "settings"]);
+
+function useProjectId(): string | null {
+  const pathname = usePathname();
+  const match = pathname.match(/^\/dashboard\/([^/]+)/);
+  const candidate = match?.[1] ?? null;
+
+  // /dashboard/sites/new and /dashboard/settings are routes, not project ids.
+  return candidate && RESERVED_SEGMENTS.has(candidate) ? null : candidate;
+}
 
 function Brand({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -65,17 +84,45 @@ function Brand({ onNavigate }: { onNavigate?: () => void }) {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const projectId = useProjectId();
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5">
       {NAV_ITEMS.map((item) => {
-        // startsWith so /content/[id] keeps Content highlighted.
-        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const href = item.global
+          ? `/dashboard/${item.segment}`
+          : projectId
+            ? `/dashboard/${projectId}${item.segment ? `/${item.segment}` : ""}`
+            : "/dashboard";
+
+        // startsWith so /content/[id] keeps Content highlighted — except for
+        // the dashboard itself, whose href is a prefix of every sibling.
+        const isActive =
+          item.segment === ""
+            ? pathname === href
+            : pathname === href || pathname.startsWith(`${href}/`);
+
+        // Without a site there's nothing for a per-site link to point at, so
+        // it renders inert rather than silently bouncing back to /dashboard.
+        const isDisabled = !item.global && !projectId && item.segment !== "";
+
+        if (isDisabled) {
+          return (
+            <span
+              key={item.segment}
+              aria-disabled
+              className="text-ink-300 flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-medium"
+            >
+              <item.icon className="size-4 shrink-0" />
+              {item.label}
+            </span>
+          );
+        }
 
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={item.segment}
+            href={href}
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-medium no-underline transition-colors hover:no-underline",
