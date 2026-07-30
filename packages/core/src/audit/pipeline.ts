@@ -1,6 +1,8 @@
 import prisma, { type Prisma } from "@theseosaas/db";
+import { env } from "@theseosaas/env/server";
 
 import { toAppError } from "../errors.ts";
+import { sendAuditReadyEmail } from "../mail/index.ts";
 import { settle } from "../util/async.ts";
 import {
   extractPositioning,
@@ -239,6 +241,10 @@ export async function runAuditPipeline({
     // Competitor rows are written outside the transaction: they're additive
     // detail, and a failure here shouldn't roll back a complete report.
     await persistCompetitors(auditId, competitors, competitorPages, keywords);
+
+    // Same reasoning, more so: a bounced email must never fail a run that
+    // produced a perfectly good report.
+    await notifyIfRequested(auditId).catch(() => {});
   } catch (error) {
     const appError = toAppError(error);
 
@@ -256,6 +262,47 @@ export async function runAuditPipeline({
 
     throw appError;
   }
+}
+
+/**
+ * Sends the one-off "your crawl finished" email, if someone asked for it on
+ * the setup screen.
+ *
+ * `notifiedAt` is set in the same update that reads the address, and the write
+ * is conditioned on it still being null — so a job retried after a partial
+ * failure can't send the mail twice.
+ */
+async function notifyIfRequested(auditId: string): Promise<void> {
+  const audit = await prisma.audit.findUnique({
+    where: { id: auditId },
+    select: {
+      publicId: true,
+      domain: true,
+      score: true,
+      summary: true,
+      notifyEmail: true,
+      notifiedAt: true,
+    },
+  });
+
+  if (!audit?.notifyEmail || audit.notifiedAt) return;
+
+  const claimed = await prisma.audit.updateMany({
+    where: { id: auditId, notifiedAt: null },
+    data: { notifiedAt: new Date() },
+  });
+
+  if (claimed.count === 0) return;
+
+  const appUrl = env.APP_URL.replace(/\/$/, "");
+
+  await sendAuditReadyEmail({
+    to: audit.notifyEmail,
+    url: `${appUrl}/audit/${audit.publicId}`,
+    domain: audit.domain,
+    score: audit.score ?? 0,
+    headline: audit.summary ?? "Your crawl finished and the findings are ready.",
+  });
 }
 
 /**
