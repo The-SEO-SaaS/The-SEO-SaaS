@@ -129,6 +129,17 @@ export interface NextAction {
   reportUrl: string | null;
 }
 
+/**
+ * The rows the design stacks under the "do this next" card. Same shape as
+ * NextAction minus the report link, which the card above already carries.
+ */
+export interface QueuedAction {
+  opportunityId: string;
+  title: string;
+  rationale: string;
+  keywords: string[];
+}
+
 export interface SiteDashboard {
   project: { id: string; domain: string; name: string; createdAt: string };
 
@@ -144,8 +155,17 @@ export interface SiteDashboard {
 
   figures: {
     openIssues: { critical: number; warning: number; notice: number };
+    /**
+     * Change in total open issues against the previous completed audit.
+     * Negative is an improvement. Null until a second audit exists.
+     */
+    openIssuesChange: number | null;
+    /** Oldest-first issue totals per completed audit. Empty below 2 points. */
+    openIssuesHistory: number[];
     opportunityCount: number;
     averagePosition: number | null;
+    /** Change against the previous check-day. Negative is an improvement. */
+    averagePositionChange: number | null;
   };
 
   competitors: CompetitorStanding[];
@@ -154,6 +174,18 @@ export interface SiteDashboard {
   averagePositionTrend: AveragePositionPoint[] | null;
 
   nextAction: NextAction | null;
+
+  /** Up to three more suggestions, ranked below `nextAction`. */
+  queuedActions: QueuedAction[];
+
+  /** The design's "content in flight" table. Newest first. */
+  contentInFlight: {
+    id: string;
+    title: string;
+    /** The term it targets — the design's middle column. */
+    target: string | null;
+    status: "DRAFT" | "GENERATING" | "GENERATED" | "PUBLISHED" | "ARCHIVED" | "FAILED";
+  }[];
 
   quota: {
     competitors: { used: number; limit: number };
@@ -226,11 +258,17 @@ export async function getSiteDashboard(userId: string, projectId: string): Promi
     .map((a) => ({ date: a.completedAt!.toISOString(), score: a.score! }))
     .reverse();
 
-  const topOpportunity = await prisma.opportunity.findFirst({
+  // Four, not one: the design's "do this next" block is a headline card plus
+  // a short queue beneath it. Taking them in a single query keeps the ranking
+  // consistent between the two.
+  const rankedOpportunities = await prisma.opportunity.findMany({
     where: { projectId, status: "SUGGESTED" },
     orderBy: { rank: "asc" },
+    take: 4,
     select: { id: true, title: true, rationale: true, keywords: true },
   });
+
+  const topOpportunity = rankedOpportunities[0] ?? null;
 
   const averagePositionTrend = await computeAveragePositionTrend(projectId);
 
@@ -239,8 +277,40 @@ export async function getSiteDashboard(userId: string, projectId: string): Promi
       ? averagePositionTrend[averagePositionTrend.length - 1]!.averagePosition
       : null;
 
+  const averagePositionChange =
+    averagePositionTrend && averagePositionTrend.length >= 2
+      ? Math.round(
+          (averagePositionTrend[averagePositionTrend.length - 1]!.averagePosition -
+            averagePositionTrend[averagePositionTrend.length - 2]!.averagePosition) *
+            10,
+        ) / 10
+      : null;
+
+  // Issue totals per audit, oldest-first, so the figures strip can draw the
+  // design's small trend line. Audits without a counts block are skipped
+  // rather than counted as zero, which would draw a false cliff.
+  const issueTotals = audits
+    .map((audit) => (audit.rawData ?? {}) as RawAuditData)
+    .map((data) =>
+      data.counts ? data.counts.critical + data.counts.warning + data.counts.notice : null,
+    )
+    .filter((total): total is number => total !== null)
+    .reverse();
+
+  const openIssuesChange =
+    issueTotals.length >= 2
+      ? issueTotals[issueTotals.length - 1]! - issueTotals[issueTotals.length - 2]!
+      : null;
+
   const opportunityCount = await prisma.opportunity.count({
     where: { projectId, status: "SUGGESTED" },
+  });
+
+  const contentRows = await prisma.content.findMany({
+    where: { projectId, type: "BLOG_POST" },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: { id: true, title: true, keywords: true, status: true },
   });
 
   const limits = entitlements?.limits ?? null;
@@ -261,8 +331,11 @@ export async function getSiteDashboard(userId: string, projectId: string): Promi
     },
     figures: {
       openIssues: raw.counts ?? { critical: 0, warning: 0, notice: 0 },
+      openIssuesChange,
+      openIssuesHistory: issueTotals.length >= 2 ? issueTotals : [],
       opportunityCount,
       averagePosition: latestAveragePosition,
+      averagePositionChange,
     },
     competitors,
     averagePositionTrend,
@@ -275,6 +348,18 @@ export async function getSiteDashboard(userId: string, projectId: string): Promi
           reportUrl: publicIdRow ? `/audit/${publicIdRow.publicId}` : null,
         }
       : null,
+    contentInFlight: contentRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      target: row.keywords[0] ?? null,
+      status: row.status,
+    })),
+    queuedActions: rankedOpportunities.slice(1).map((opportunity) => ({
+      opportunityId: opportunity.id,
+      title: opportunity.title,
+      rationale: opportunity.rationale,
+      keywords: opportunity.keywords,
+    })),
     quota: {
       competitors: { used: competitorRows.length, limit: limits?.competitorsPerProject ?? 0 },
       keywords: { used: trackedKeywordCount, limit: limits?.trackedKeywords ?? 0 },
