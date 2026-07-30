@@ -4,14 +4,14 @@ import { Button } from "@theseosaas/ui/components/button";
 import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { FadeIn, PhaseTransition } from "@theseosaas/ui/components/motion";
-import { ProgressBar } from "@theseosaas/ui/components/progress-bar";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { AuditHeader, ReportMeta } from "@/components/audit/audit-header";
-import { CrawlChecklist } from "@/components/audit/crawl-checklist";
+import { CategoryStrip } from "@/components/audit/category-strip";
+import { CrawlScreen } from "@/components/audit/crawl-screen";
 import { EmailGate } from "@/components/audit/email-gate";
 import {
   CompetitorsSection,
@@ -79,32 +79,16 @@ export function AuditFlow({ publicId }: { publicId: string }) {
 
   if (phase === "running") {
     return (
-      <>
-        <AuditHeader />
-        <main className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-20">
-          <PhaseTransition phaseKey="running">
-            <div className="space-y-7 sm:space-y-8">
-              <FadeIn className="space-y-2">
-                <div className="eyebrow text-ink-300">Crawl in progress</div>
-                <h1 className="font-display text-ink-900 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  Auditing your site
-                </h1>
-                <p className="why-line">
-                  This takes a couple of minutes. We&apos;re reading your pages, checking the
-                  technical basics, and working out who you&apos;re really competing with.
-                </p>
-              </FadeIn>
-
-              <ProgressBar value={progress?.progress ?? 0} tone="ink" />
-
-              <CrawlChecklist
-                currentStep={progress?.currentStep ?? null}
-                progress={progress?.progress ?? 0}
-              />
-            </div>
-          </PhaseTransition>
-        </main>
-      </>
+      <div className="flex min-h-svh flex-col">
+        <AuditHeader variant="crawling" domain={progress?.domain ?? undefined} />
+        <PhaseTransition phaseKey="running" className="flex flex-1 flex-col">
+          <CrawlScreen
+            publicId={publicId}
+            domain={progress?.domain ?? ""}
+            progress={progress}
+          />
+        </PhaseTransition>
+      </div>
     );
   }
 
@@ -134,33 +118,64 @@ export function AuditFlow({ publicId }: { publicId: string }) {
 
   return (
     <>
-      <AuditHeader shareUrl={shareUrl} />
+      <AuditHeader />
 
-      <main className="mx-auto max-w-5xl space-y-10 px-4 py-10 sm:space-y-12 sm:px-6 sm:py-12">
-        <FadeIn>
+      {/*
+        Report head. Design spec: 40px/48px/32px padding with a 1px #EDEFF3
+        rule beneath, and a `minmax(0,1fr) auto` grid at 44px gap — verdict copy
+        on the left, the score card on the right. Stacks below `lg`, where a
+        296px card alongside a 58ch paragraph doesn't fit.
+      */}
+      <FadeIn className="border-b border-[#EDEFF3] px-5 pt-8 pb-7 sm:px-12 sm:pt-10 sm:pb-8">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-11">
           <ReportMeta
             domain={report.domain}
             completedAt={report.completedAt}
             pagesCrawled={report.pagesCrawled}
+            summary={report.summary}
+            shareUrl={shareUrl}
           />
-        </FadeIn>
 
+          <ScorePanel
+            score={report.score ?? 0}
+            band={report.band}
+            counts={report.counts}
+          />
+        </div>
+      </FadeIn>
+
+      <CategoryStrip
+        categories={[
+          ...(report.technicalHealth !== null
+            ? [
+                {
+                  label: "Technical",
+                  score: report.technicalHealth,
+                  note: "Crawlability, indexing, markup and redirects.",
+                },
+              ]
+            : []),
+          ...(report.contentHealth !== null
+            ? [
+                {
+                  label: "Content",
+                  score: report.contentHealth,
+                  note: "Depth, titles and coverage against buyer intent.",
+                },
+              ]
+            : []),
+        ]}
+      />
+
+      <main className="mx-auto max-w-5xl space-y-10 px-4 py-10 sm:space-y-12 sm:px-6 sm:py-12">
         <FadeIn delay={0.08}>
           <Card variant="panel">
-            <CardContent className="space-y-6 sm:space-y-8">
-              <ScorePanel
+            <CardContent>
+              <ScoreVerdict
                 score={report.score ?? 0}
-                band={report.band}
-                counts={report.counts}
+                technicalHealth={report.technicalHealth}
+                summary={report.summary}
               />
-
-              <div className="border-line border-t pt-6 sm:pt-8">
-                <ScoreVerdict
-                  score={report.score ?? 0}
-                  technicalHealth={report.technicalHealth}
-                  summary={report.summary}
-                />
-              </div>
             </CardContent>
           </Card>
         </FadeIn>
