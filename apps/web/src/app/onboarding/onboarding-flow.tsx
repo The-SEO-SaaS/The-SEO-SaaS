@@ -11,8 +11,9 @@ import { KeywordsStep } from "@/components/onboarding/keywords-step";
 import { PlanStep } from "@/components/onboarding/plan-step";
 import { SiteStep, type SiteStepValue } from "@/components/onboarding/site-step";
 import { StepShell } from "@/components/onboarding/step-shell";
+import { useCheckoutRedirect } from "@/hooks/use-billing";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import type { OnboardingKeyword } from "@/lib/api";
+import type { BillingInterval, OnboardingKeyword } from "@/lib/api";
 
 /**
  * Onboarding.
@@ -24,6 +25,7 @@ import type { OnboardingKeyword } from "@/lib/api";
 export function OnboardingFlow() {
   const flow = useOnboarding();
   const { state } = flow;
+  const checkout = useCheckoutRedirect();
 
   const [site, setSite] = React.useState<SiteStepValue>({
     domain: "",
@@ -31,6 +33,21 @@ export function OnboardingFlow() {
     platform: null,
   });
   const [plan, setPlan] = React.useState<"STARTER" | "GROWTH" | "SCALE" | null>(null);
+  const [billingInterval, setBillingInterval] = React.useState<BillingInterval>("MONTHLY");
+
+  // A marketing-page "Start with X" click carries the chosen plan/interval
+  // through sign-in as query params, since there's no user to bill yet at that
+  // point. Read with window.location rather than useSearchParams so this page
+  // doesn't need a Suspense boundary just for a one-time, best-effort seed.
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const queryPlan = params.get("plan");
+    if (queryPlan === "STARTER" || queryPlan === "GROWTH" || queryPlan === "SCALE") {
+      setPlan((current) => current ?? queryPlan);
+    }
+    if (params.get("interval") === "YEARLY") setBillingInterval("YEARLY");
+  }, []);
 
   // Seed local form state once the server payload lands.
   React.useEffect(() => {
@@ -190,19 +207,29 @@ export function OnboardingFlow() {
       step="plan"
       title="Pick the limits that fit"
       subtitle="Every plan includes every feature. The only difference is how much you can track and generate each month."
-      error={flow.completeError}
-      isSubmitting={flow.isCompleting}
-      meta="Billing isn't wired up yet — this saves your choice."
+      error={checkout.error}
+      isSubmitting={checkout.isRedirecting}
+      meta="You'll be sent to secure checkout. Nothing is charged until you confirm there."
       onBack={flow.back}
-      continueLabel="Finish setup"
+      continueLabel="Continue to checkout"
       continueDisabled={!plan}
-      onContinue={flow.complete}
+      onContinue={() => {
+        if (!plan) return;
+        checkout.startCheckout({
+          plan,
+          interval: billingInterval,
+          returnPath: "/onboarding/complete",
+          cancelPath: "/onboarding",
+        });
+      }}
     >
       <PlanStep
         competitorCount={flow.selectedCompetitors.size}
         keywordCount={flow.selectedKeywords.size}
         selected={plan}
         onSelect={setPlan}
+        interval={billingInterval}
+        onIntervalChange={setBillingInterval}
       />
 
       <p className="text-ink-300 mt-5 text-center text-sm">

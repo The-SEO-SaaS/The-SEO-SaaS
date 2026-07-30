@@ -7,12 +7,15 @@ import { cn } from "@theseosaas/ui/lib/utils";
 import { Check } from "lucide-react";
 
 type PlanId = "STARTER" | "GROWTH" | "SCALE";
+type BillingInterval = "MONTHLY" | "YEARLY";
 
 /**
  * Step 4 — plan.
  *
  * Mirrors packages/core/src/billing/plans.ts, which stays authoritative since
- * it enforces the quota.
+ * it enforces the quota and is what actually creates the Dodo checkout. Yearly
+ * price is ten months' worth (two months free) — if that multiplier ever
+ * changes, change it in both places.
  *
  * The recommendation is derived from what the audit actually found rather than
  * always pushing the middle tier. A founder with four competitors and twelve
@@ -22,7 +25,8 @@ type PlanId = "STARTER" | "GROWTH" | "SCALE";
 const PLANS: {
   id: PlanId;
   name: string;
-  price: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
   for: string;
   limits: { competitors: number; keywords: number; articles: number };
   bullets: string[];
@@ -30,7 +34,8 @@ const PLANS: {
   {
     id: "STARTER",
     name: "Starter",
-    price: "$49.99",
+    monthlyPrice: 49.99,
+    yearlyPrice: 499.9,
     for: "One site, getting started",
     limits: { competitors: 3, keywords: 100, articles: 5 },
     bullets: [
@@ -43,7 +48,8 @@ const PLANS: {
   {
     id: "GROWTH",
     name: "Growth",
-    price: "$99.99",
+    monthlyPrice: 99.99,
+    yearlyPrice: 999.9,
     for: "Publishing consistently",
     limits: { competitors: 10, keywords: 500, articles: 20 },
     bullets: [
@@ -57,7 +63,8 @@ const PLANS: {
   {
     id: "SCALE",
     name: "Scale",
-    price: "$199.99",
+    monthlyPrice: 199.99,
+    yearlyPrice: 1999.9,
     for: "Multiple sites, serious volume",
     limits: { competitors: 25, keywords: 2000, articles: 50 },
     bullets: [
@@ -83,11 +90,15 @@ export function PlanStep({
   keywordCount,
   selected,
   onSelect,
+  interval,
+  onIntervalChange,
 }: {
   competitorCount: number;
   keywordCount: number;
   selected: PlanId | null;
   onSelect: (plan: PlanId) => void;
+  interval: BillingInterval;
+  onIntervalChange: (interval: BillingInterval) => void;
 }) {
   const recommended = recommendFor(competitorCount, keywordCount);
 
@@ -106,10 +117,29 @@ export function PlanStep({
         </CardContent>
       </Card>
 
+      <div className="flex items-center justify-center gap-1 rounded-full border border-line bg-surface p-1 text-sm">
+        {(["MONTHLY", "YEARLY"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onIntervalChange(option)}
+            className={cn(
+              "rounded-full px-4 py-1.5 font-medium transition-colors",
+              interval === option
+                ? "bg-ink-900 text-white"
+                : "text-ink-400 hover:text-ink-900",
+            )}
+          >
+            {option === "MONTHLY" ? "Monthly" : "Yearly — 2 months free"}
+          </button>
+        ))}
+      </div>
+
       <Stagger className="grid gap-3 md:grid-cols-3" whenInView={false}>
         {PLANS.map((plan) => {
           const isSelected = selected === plan.id;
           const isRecommended = plan.id === recommended;
+          const price = interval === "YEARLY" ? plan.yearlyPrice : plan.monthlyPrice;
 
           return (
             <StaggerItem key={plan.id} className="h-full">
@@ -136,9 +166,11 @@ export function PlanStep({
 
                 <div className="flex items-baseline gap-1">
                   <span className="font-display text-ink-900 text-3xl font-semibold tabular-nums">
-                    {plan.price}
+                    ${price.toFixed(2)}
                   </span>
-                  <span className="text-ink-300 text-sm">/month</span>
+                  <span className="text-ink-300 text-sm">
+                    {interval === "YEARLY" ? "/year" : "/month"}
+                  </span>
                 </div>
 
                 <ul className="flex-1 space-y-1.5">
