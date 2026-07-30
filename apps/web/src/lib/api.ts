@@ -547,6 +547,10 @@ export interface KeywordRow {
   change: number | null;
   trend: number[];
   isPending: boolean;
+  /** Our own 0–100 estimate from SERP composition. Not Ahrefs KD. */
+  difficulty: number | null;
+  /** How contested the term looks. NOT search volume. */
+  demand: "LOW" | "MEDIUM" | "HIGH" | null;
 }
 
 export interface KeywordGapRow {

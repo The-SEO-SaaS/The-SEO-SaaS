@@ -42,6 +42,17 @@ export interface KeywordRow {
   trend: number[];
   /** True when no check has run yet — the row shows "checking…", not "not ranking". */
   isPending: boolean;
+
+  /**
+   * Our own 0–100 difficulty estimate from the SERP composition. Null until
+   * the first rank check scores it. Not Ahrefs KD and not comparable to it.
+   */
+  difficulty: number | null;
+  /**
+   * How commercially contested the term looks. NOT search volume — nothing in
+   * a SERP response measures demand, so this is a band, never a number.
+   */
+  demand: "LOW" | "MEDIUM" | "HIGH" | null;
 }
 
 export interface KeywordGapRow {
@@ -102,6 +113,8 @@ export async function listKeywords(
         source: true,
         rationale: true,
         isTracked: true,
+        difficulty: true,
+        demand: true,
         rankings: {
           orderBy: { checkedAt: "desc" },
           take: TREND_WINDOW,
@@ -139,6 +152,8 @@ export async function listKeywords(
           : null,
       trend,
       isPending: row.rankings.length === 0,
+      difficulty: row.difficulty,
+      demand: row.demand as KeywordRow["demand"],
     };
   });
 
