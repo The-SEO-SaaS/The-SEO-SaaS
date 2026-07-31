@@ -1,5 +1,6 @@
 "use client";
 
+import { toParagraphs } from "@theseosaas/core/text";
 import { BrandGlyph } from "@theseosaas/ui/components/brand-mark";
 import { Button } from "@theseosaas/ui/components/button";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
@@ -118,10 +119,27 @@ export function ReportMeta({
         {domain}
       </h1>
 
-      <p className="mt-3 max-w-[58ch] text-[15px] leading-[1.6] text-[#5B6472]">
-        {summary ??
-          `${pagesCrawled} ${pagesCrawled === 1 ? "page" : "pages"} crawled. The findings below are ordered by the traffic they put at risk.`}
-      </p>
+      {/*
+        Only the opening paragraph here. The full verdict appears in the panel
+        further down, and repeating sixty words directly under the domain name
+        pushes the score card and the first finding below the fold — the two
+        things someone opening a shared link came to see.
+      */}
+      <div className="mt-3 space-y-2.5">
+        {toParagraphs(
+          summary ??
+            `${pagesCrawled} ${pagesCrawled === 1 ? "page" : "pages"} crawled. The findings below are ordered by the traffic they put at risk.`,
+        )
+          .slice(0, 1)
+          .map((paragraph, index) => (
+            <p
+              key={index}
+              className="max-w-[62ch] text-[15px] leading-[1.7] text-[#5B6472]"
+            >
+              {paragraph}
+            </p>
+          ))}
+      </div>
 
       {displayUrl ? (
         <div className="mt-[22px] flex flex-wrap items-center gap-2.5">

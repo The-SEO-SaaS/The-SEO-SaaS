@@ -1,3 +1,4 @@
+import { toParagraphs } from "../util/prose.ts";
 import { BRAND, FONT, button, escapeHtml, layout, paragraph } from "./brand.ts";
 
 /**
@@ -82,11 +83,19 @@ export function auditReadyTemplate(input: AuditReadyTemplateInput): {
   const heading = `Your SEO audit for ${input.domain} is ready`;
   const tone = scoreTone(input.score);
 
+  // Broken up the same way the report page breaks it, so someone who reads the
+  // email and then opens the link sees the same document rather than two
+  // differently-shaped versions of one verdict.
+  const verdict = toParagraphs(input.headline);
+
   const html = layout({
     heading,
-    preheader: input.headline,
+    // The preheader gets the whole thing on one line — inbox previews collapse
+    // whitespace anyway, and truncating at the first paragraph would cut the
+    // sentence that makes someone open it.
+    preheader: input.headline.replace(/\s+/g, " "),
     body: `
-      ${paragraph(escapeHtml(input.headline))}
+      ${verdict.map((part) => paragraph(escapeHtml(part))).join("\n")}
 
       <!-- Score panel. The number is the reason to open the link, so it's
            shown here rather than making someone click to find out. -->
@@ -114,7 +123,9 @@ export function auditReadyTemplate(input: AuditReadyTemplateInput): {
   const text = [
     heading,
     "",
-    input.headline,
+    // Blank line between paragraphs in the plain-text part too. A wall of text
+    // is worse there than in HTML, since there's no typography to carry it.
+    verdict.join("\n\n"),
     "",
     `SEO score: ${input.score}/100 (${tone.label})`,
     "",

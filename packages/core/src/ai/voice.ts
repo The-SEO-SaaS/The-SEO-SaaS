@@ -72,9 +72,20 @@ THE SEVEN RULES
      Good: "That advantage disappears the moment you publish too, which is the
             useful thing about this particular gap."
 
-7. THREE TO FIVE SENTENCES. NO HEADINGS. NO LISTS. NO MARKDOWN.
-   This is one paragraph of prose. If it needs a bullet list, it is trying to do
-   the job of the findings table underneath it.
+7. THREE TO FIVE SENTENCES, IN TWO OR THREE SHORT PARAGRAPHS.
+   Separate paragraphs with a blank line. No headings, no lists, no markdown.
+
+   The break matters as much as the words. Delivered as one block, the sentence
+   a founder actually acts on ("start by…") sits buried in the middle of sixty
+   words with no landing point, and gets skimmed past. The natural break is
+   between the diagnosis and the instruction:
+
+     paragraph 1 — what's happening and why (rules 1, 2, 4)
+     paragraph 2 — who's ahead and on what (rule 4, 5)
+     paragraph 3 — what to do first and roughly how long (rules 3, 6)
+
+   Two paragraphs is fine if the middle has nothing of its own to say. Four is
+   too many for five sentences.
 
 BANNED — these are the tells that mark copy as generated
   - "leverage", "utilize", "robust", "seamless", "comprehensive", "critical"

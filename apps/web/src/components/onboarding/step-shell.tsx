@@ -84,18 +84,13 @@ export function StepShell({
 
   return (
     /*
-      The design floats the whole flow as a white card on a tinted canvas
-      rather than running it edge to edge — that's the difference between the
-      screenshots and what was shipping. The tint is subtle (#F4F5F7 against
-      #FFFFFF) and does real work: it separates the rail from the page, gives
-      the card a visible edge on a large monitor, and stops a 2560px display
-      showing an unbroken white field with a 248px column stranded at one side.
-
-      Padding only from `sm` up. On a phone the card would be a white rectangle
-      inset in a grey one, which wastes the horizontal space the form needs.
+      Full-bleed. An earlier version floated this as an inset card on a tinted
+      canvas; it looked tidy in isolation and wrong in use — the form lost
+      horizontal room to a decorative margin, and setup is a task screen, not
+      something to frame. Edge to edge, the rail behaves like app chrome, which
+      is what it is.
     */
-    <div className="min-h-svh bg-[#F4F5F7] sm:p-4 lg:p-6">
-      <div className="mx-auto flex min-h-svh max-w-[1180px] flex-col overflow-hidden bg-white sm:min-h-[calc(100svh-2rem)] sm:rounded-2xl sm:border sm:border-[#E7EAEF] sm:shadow-[0_1px_2px_rgba(11,18,32,0.04)] lg:min-h-[calc(100svh-3rem)] lg:flex-row">
+    <div className="flex min-h-svh flex-col bg-white lg:flex-row">
       {/* Rail */}
       <aside className="flex shrink-0 flex-col border-b border-[#EDEFF3] bg-surface px-5 pt-5 pb-4 lg:w-[248px] lg:border-r lg:border-b-0 lg:px-6 lg:pt-7 lg:pb-6">
         <div className="flex items-center gap-2.5">
@@ -225,7 +220,6 @@ export function StepShell({
           </div>
         </div>
       </main>
-      </div>
     </div>
   );
 }

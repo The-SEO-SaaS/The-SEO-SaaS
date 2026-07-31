@@ -63,10 +63,32 @@ function FactRow({ fact }: { fact: Fact }) {
         )}
       </span>
 
+      {/*
+        The label carries the answer's colour too, not just the icon. At an
+        18px tick a skimmer reading down the column can't tell pass from
+        not-found without stopping to look — the whole point of this section is
+        that it should be readable at a glance.
+
+        Green for a pass, plain ink for "we checked and it isn't there" (an
+        observation, not a failure), red only for actively blocking indexing.
+      */}
       <span className="min-w-0">
-        <span className="text-ink-900 text-[13.5px]">{fact.label}</span>
+        <span
+          className={cn(
+            "text-[13.5px]",
+            unknown
+              ? "text-[#9AA2AF]"
+              : bad
+                ? "font-semibold text-[#B91C1C]"
+                : fact.value
+                  ? "font-medium text-[#15803D]"
+                  : "text-ink-900",
+          )}
+        >
+          {fact.label}
+        </span>
         {fact.note ? (
-          <span className="mt-0.5 block text-[12px] text-[#6B7480]">{fact.note}</span>
+          <span className="mt-0.5 block text-[12px] text-[#B91C1C]">{fact.note}</span>
         ) : null}
       </span>
     </div>

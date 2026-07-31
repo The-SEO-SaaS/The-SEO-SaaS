@@ -14,7 +14,8 @@
     "./billing": "./src/billing/index.ts",
     "./plans": "./src/billing/plan-data.ts",
     "./http": "./src/http/index.ts",
-    "./util": "./src/util/index.ts"
+    "./util": "./src/util/index.ts",
+    "./text": "./src/util/prose.ts"
   },
   "dependencies": {
     "@theseosaas/db": "workspace:*",

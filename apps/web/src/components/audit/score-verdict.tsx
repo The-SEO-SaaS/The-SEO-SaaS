@@ -1,5 +1,6 @@
 "use client";
 
+import { toParagraphs } from "@theseosaas/core/text";
 import { ProgressBar, toneForScore } from "@theseosaas/ui/components/progress-bar";
 import { cn } from "@theseosaas/ui/lib/utils";
 
@@ -42,11 +43,32 @@ export function ScoreVerdict({
 
   return (
     <div className={cn("space-y-5", className)}>
-      {/* The number already appears in ScorePanel above, so this block leads
-          with the verdict sentence — repeating the score would bury it. */}
-      <p className="text-ink-700 max-w-[52ch] text-base leading-relaxed text-pretty sm:text-lg">
-        {summary ?? fallbackVerdict(score)}
-      </p>
+      {/*
+        The number already appears in ScorePanel above, so this block leads with
+        the verdict — repeating the score would bury it.
+
+        Two changes from the first version. The `max-w-[52ch]` is gone: inside a
+        full-width panel it left two thirds of the card empty while the text
+        wrapped into a narrow column, which is what made it read as a wall.
+        And the verdict is now broken into paragraphs rather than one block —
+        60-odd words with no landing point buries the sentence the reader
+        actually acts on.
+      */}
+      <div className="space-y-3.5">
+        {toParagraphs(summary ?? fallbackVerdict(score)).map((paragraph, index) => (
+          <p
+            key={index}
+            className={cn(
+              "text-ink-700 w-full text-base leading-[1.75] text-pretty sm:text-[17px]",
+              // The opening paragraph is the diagnosis; give it slightly more
+              // weight so a skimmer who reads one thing reads the right one.
+              index === 0 && "text-ink-900",
+            )}
+          >
+            {paragraph}
+          </p>
+        ))}
+      </div>
 
       <div className="space-y-3">
         <div className="space-y-1.5">

@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 
+import { toParagraphs } from "../util/prose.ts";
 import { getAuditReport } from "./service.ts";
 
 /**
@@ -152,11 +153,19 @@ export async function renderAuditPdf(publicId: string): Promise<{
 
   if (report.summary) {
     section(doc, "The verdict");
-    doc
-      .font("Helvetica")
-      .fontSize(10.5)
-      .fillColor(MUTED)
-      .text(report.summary, { width: CONTENT_WIDTH, lineGap: 3.5 });
+
+    // Same paragraph breaks as the report page and the email — see
+    // util/prose.ts. A single 60-word block is a wall on screen and worse on
+    // paper, where the reader can't scroll away from it.
+    toParagraphs(report.summary).forEach((part, index) => {
+      if (index > 0) doc.moveDown(0.55);
+      doc
+        .font("Helvetica")
+        .fontSize(10.5)
+        .fillColor(index === 0 ? INK : MUTED)
+        .text(part, { width: CONTENT_WIDTH, lineGap: 3.5 });
+    });
+
     doc.moveDown(1.2);
   }
 

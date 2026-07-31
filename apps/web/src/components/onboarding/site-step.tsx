@@ -91,8 +91,15 @@ export function SiteStep({
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-ink-700 text-base font-medium">What kind of site is it?</h2>
-          <p className="text-ink-400 text-sm">
+          {/*
+            A field label, not a section heading. `text-base font-medium` gave
+            these the same weight as the step's own H1 two elements above, so
+            the screen read as three competing titles. Down to 14px regular —
+            the question still leads, the answer cards below it are what the eye
+            should land on.
+          */}
+          <h2 className="text-[14px] text-[#3F4854]">What kind of site is it?</h2>
+          <p className="mt-0.5 text-[12.5px] leading-[1.55] text-[#6B7480]">
             This shapes the structure of the pages we generate for you.
           </p>
         </div>
@@ -114,8 +121,8 @@ export function SiteStep({
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-ink-700 text-base font-medium">Where is it published?</h2>
-          <p className="text-ink-400 text-sm">
+          <h2 className="text-[14px] text-[#3F4854]">Where is it published?</h2>
+          <p className="mt-0.5 text-[12.5px] leading-[1.55] text-[#6B7480]">
             Optional. This only affects export hints on drafts — markdown works everywhere.
           </p>
         </div>

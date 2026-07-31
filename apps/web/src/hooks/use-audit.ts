@@ -98,6 +98,14 @@ export function useAuditFlow(publicId: string) {
     report: report.data,
     isLoadingReport: report.isLoading,
     error: progress.error ? progress.message : report.isError ? report.message : null,
+    /**
+     * Surfaced separately from `error` so the report screen can tell "the fetch
+     * failed" apart from "still loading". Merged into one field, a 500 on the
+     * report endpoint rendered as an eternal spinner — the audit was finished
+     * and readable, and the page just never said so.
+     */
+    reportError: report.isError ? report.message : null,
+    retryReport: report.refetch,
     gaveUp: progress.gaveUp,
     passGate: React.useCallback(() => setGatePassed(true), []),
   };

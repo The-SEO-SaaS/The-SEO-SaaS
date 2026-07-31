@@ -6,7 +6,7 @@ import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { SectionHeading } from "@theseosaas/ui/components/section-heading";
-import { ArrowUpRight, Check, FileText, Lock, Sparkles } from "lucide-react";
+import { ArrowUpRight, Check, ExternalLink, FileText, Lock, Sparkles, Wrench } from "lucide-react";
 
 import type {
   AuditIssue,
@@ -59,20 +59,50 @@ export function FindingsSection({ issues }: { issues: AuditIssue[] }) {
 
                   <p className="why-line">{issue.whyItMatters}</p>
 
+                  {/*
+                    The fix gets its own tinted block rather than another grey
+                    line. Every card previously rendered three near-identical
+                    paragraphs, so a skimmer had no way to find the one
+                    sentence telling them what to do — which is the only line
+                    on the card that's actionable.
+
+                    Teal rather than green: green reads as "resolved" next to
+                    the severity badges, and this is work still outstanding.
+                  */}
                   {issue.howToFix ? (
-                    <p className="text-ink-500 text-sm">
-                      <span className="text-ink-700 font-medium">Fix:</span> {issue.howToFix}
-                    </p>
+                    <div className="flex items-start gap-2.5 rounded-lg border border-[#CFE7E4] bg-[#F2FAF9] px-3 py-2.5">
+                      <Wrench
+                        className="mt-[3px] size-[13px] shrink-0 text-[#0F766E]"
+                        strokeWidth={2}
+                      />
+                      <p className="text-[13.5px] leading-[1.6] text-[#2B4B48]">
+                        <span className="font-semibold text-[#0F766E]">Fix:</span>{" "}
+                        {issue.howToFix}
+                      </p>
+                    </div>
                   ) : null}
 
                   {issue.affectedUrls.length > 0 ? (
-                    // break-all so a long URL wraps instead of forcing the
-                    // whole card to scroll horizontally on a phone.
-                    <div className="text-ink-300 font-mono text-xs break-all">
-                      {issue.affectedUrls[0]}
-                      {issue.affectedUrls.length > 1
-                        ? ` +${issue.affectedUrls.length - 1} more`
-                        : ""}
+                    // Real links, not grey monospace text. These are the pages
+                    // the finding is about, and a reader's next move is to open
+                    // one — leaving them as unclickable strings made every card
+                    // end in a dead end. break-all so a long URL wraps instead
+                    // of forcing horizontal scroll on a phone.
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-0.5">
+                      <a
+                        href={issue.affectedUrls[0]}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1 font-mono text-xs break-all text-[#1D4ED8] underline decoration-[#BFD3F8] underline-offset-2 hover:decoration-[#1D4ED8]"
+                      >
+                        {issue.affectedUrls[0]}
+                        <ExternalLink className="size-3 shrink-0" strokeWidth={2} />
+                      </a>
+                      {issue.affectedUrls.length > 1 ? (
+                        <span className="text-[11.5px] text-[#9AA2AF]">
+                          +{issue.affectedUrls.length - 1} more
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                 </CardContent>

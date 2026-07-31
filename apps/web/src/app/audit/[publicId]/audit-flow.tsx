@@ -36,7 +36,8 @@ import { useSession } from "@/hooks/use-session";
  */
 export function AuditFlow({ publicId }: { publicId: string }) {
   const router = useRouter();
-  const { phase, progress, report, error, gaveUp, passGate } = useAuditFlow(publicId);
+  const { phase, progress, report, error, reportError, retryReport, gaveUp, passGate } =
+    useAuditFlow(publicId);
   const { isSignedIn } = useSession();
   const { claim, isClaiming } = useClaimAudit(publicId);
 
@@ -101,6 +102,46 @@ export function AuditFlow({ publicId }: { publicId: string }) {
           <PhaseTransition phaseKey="email-gate">
             <EmailGate publicId={publicId} onContinue={passGate} />
           </PhaseTransition>
+        </main>
+      </>
+    );
+  }
+
+  /**
+   * A failed report fetch used to render exactly like a pending one: the audit
+   * had finished, the page title showed the real score, and the body sat on
+   * "Loading your report…" indefinitely with no error and no way out. Any
+   * network blip or 500 on `/api/audit/[publicId]` looked like a hang.
+   *
+   * The two states are now distinguishable, and the failed one offers a retry
+   * — which is usually all it needs, since the report itself is already
+   * written and sitting in the database.
+   */
+  if (reportError) {
+    return (
+      <>
+        <AuditHeader />
+        <main className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
+          <Card variant="panel" className="text-center">
+            <CardContent className="space-y-4">
+              <IconTile tone="critical" size="lg" className="mx-auto">
+                <AlertTriangle />
+              </IconTile>
+              <h1 className="font-display text-ink-900 text-2xl font-semibold">
+                We couldn&apos;t load this report
+              </h1>
+              <p className="why-line">
+                The audit finished — this is a problem fetching it, not a problem
+                with your site. {reportError}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button onClick={retryReport}>Try again</Button>
+                <Button variant="outline" render={<Link href="/" />}>
+                  Run another audit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </main>
       </>
     );
