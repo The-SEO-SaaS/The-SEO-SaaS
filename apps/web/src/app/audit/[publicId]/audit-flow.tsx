@@ -11,6 +11,7 @@ import * as React from "react";
 
 import { AuditHeader, ReportMeta } from "@/components/audit/audit-header";
 import { CategoryStrip } from "@/components/audit/category-strip";
+import { CrawlFactsSection } from "@/components/audit/crawl-facts";
 import { CrawlScreen } from "@/components/audit/crawl-screen";
 import { EmailGate } from "@/components/audit/email-gate";
 import {
@@ -181,6 +182,19 @@ export function AuditFlow({ publicId }: { publicId: string }) {
         </FadeIn>
 
         <FindingsSection issues={report.issues} />
+
+        {/*
+          Sits between the findings and the curated "what's already right" list
+          on purpose. Findings answer "what's wrong", healthy answers "what's
+          good" — neither answers "what did you actually look at", which is the
+          question a sceptical first-time reader is really asking.
+        */}
+        <CrawlFactsSection
+          crawl={report.crawl}
+          pagesCrawled={report.pagesCrawled}
+          pagesDiscovered={report.pagesDiscovered}
+        />
+
         <HealthySection healthy={report.healthy} />
 
         <CompetitorsSection competitors={report.competitors} domain={report.domain} />

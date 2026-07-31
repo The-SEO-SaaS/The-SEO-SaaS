@@ -4,6 +4,8 @@ export {
   updateProgress,
   completeJob,
   failJob,
+  heartbeatJob,
+  releaseJob,
   reclaimStalledJobs,
   getJob,
   cancelJob,

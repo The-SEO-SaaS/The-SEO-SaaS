@@ -193,6 +193,21 @@ export async function runAuditPipeline({
               pagesCrawled: crawl.crawledCount,
               pagesDiscovered: crawl.discoveredUrlCount,
               avgResponseTimeMs: crawl.avgResponseTimeMs,
+
+              // Site-level facts the crawler already establishes and the
+              // technical checks already consume, but which were being thrown
+              // away afterwards. They're the questions a user asks first —
+              // "did you actually reach my site, do I have a sitemap, am I
+              // accidentally blocking Google" — and answering them from stored
+              // facts is better than leaving the reader to infer it from which
+              // issues did or didn't appear.
+              isHttps: crawl.isHttps,
+              hasRobotsTxt: crawl.hasRobotsTxt,
+              hasSitemap: crawl.hasSitemap,
+              blocksIndexing: crawl.blocksIndexing,
+              homepageWordCount: crawl.homepage.wordCount,
+              hasStructuredData: crawl.homepage.hasStructuredData,
+              hasOpenGraph: crawl.homepage.hasOpenGraph,
             },
           } as Prisma.InputJsonValue,
         },

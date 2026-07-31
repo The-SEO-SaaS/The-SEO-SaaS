@@ -161,10 +161,64 @@ export async function failJob(
 }
 
 /**
+ * Marks a running job as still alive.
+ *
+ * `lockedAt` was previously written once, at claim time, and never touched
+ * again — so "stalled" really meant "started more than ten minutes ago". An
+ * audit is advertised to users as six to eight minutes and regularly runs
+ * longer on a big site, which put healthy jobs inside the reclaim window: the
+ * sweep would hand a live job to a second worker, and two pipelines would write
+ * the same audit concurrently.
+ *
+ * With a heartbeat, `lockedAt` means what the sweep assumes it means — last
+ * sign of life — so the threshold can be about worker health rather than job
+ * duration.
+ */
+export async function heartbeatJob(jobId: string): Promise<void> {
+  await prisma.job
+    .updateMany({
+      where: { id: jobId, status: "ACTIVE" },
+      data: { lockedAt: new Date() },
+    })
+    .catch(() => {});
+}
+
+/**
+ * Hands a claimed job straight back, without consuming a retry.
+ *
+ * For clean shutdown specifically. `failJob` is wrong there twice over: it
+ * burns an attempt — two `--watch` restarts would exhaust an audit's
+ * maxAttempts of 2 and mark it dead — and it applies a 30s backoff, so a job
+ * interrupted by a dev-server reload wouldn't restart until well after the new
+ * process was up. Nothing failed here; the process just went away.
+ */
+export async function releaseJob(jobId: string, reason: string): Promise<void> {
+  await prisma.job
+    .updateMany({
+      where: { id: jobId, status: "ACTIVE" },
+      data: {
+        status: "PENDING",
+        attempts: { decrement: 1 },
+        lockedAt: null,
+        lockedBy: null,
+        runAfter: new Date(),
+        lastError: reason.slice(0, 1000),
+      },
+    })
+    .catch(() => {});
+}
+
+/**
  * Returns jobs whose worker died mid-run (locked but never finished) to the
  * pending pool. Without this, a crashed process strands work forever.
+ *
+ * Two minutes, not ten, now that `lockedAt` is heartbeated every 30s — four
+ * missed beats is dead, not busy. The old ten-minute value existed to avoid
+ * reclaiming long-running audits, which the heartbeat handles properly; it also
+ * meant a `kill -9` stranded an audit for ten minutes while its progress bar sat
+ * frozen at whatever step it died on.
  */
-export async function reclaimStalledJobs(stalledAfterMs = 1000 * 60 * 10): Promise<number> {
+export async function reclaimStalledJobs(stalledAfterMs = 1000 * 60 * 2): Promise<number> {
   const cutoff = new Date(Date.now() - stalledAfterMs);
 
   const { count } = await prisma.job.updateMany({

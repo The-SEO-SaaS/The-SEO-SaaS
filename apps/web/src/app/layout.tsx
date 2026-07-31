@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Sans, Inter } from "next/font/google";
 
 import "../index.css";
+import { GoogleAnalytics } from "@/components/analytics";
 import Providers from "@/components/providers";
 
 /**
@@ -50,6 +51,8 @@ export default function RootLayout({
         {/* No global header — marketing pages and the app shell have different
             chrome, so each route group brings its own. */}
         <Providers>{children}</Providers>
+        {/* Last in the body, loaded after hydration — see components/analytics. */}
+        <GoogleAnalytics />
       </body>
     </html>
   );

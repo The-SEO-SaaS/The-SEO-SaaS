@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --experimental-strip-types --watch src/index.ts",
+    "// dev": "No --watch by default. A single audit runs 1-8 minutes, and saving any file mid-run restarted the process and abandoned the job. Use dev:watch when iterating on handler code itself.",
+    "dev": "node --experimental-strip-types src/index.ts",
+    "dev:watch": "node --experimental-strip-types --watch src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
     "// audit": "One-shot audit against a real site, verbose, no queue. No --watch: an audit takes minutes and a file save mid-run would restart it.",
     "audit": "node --experimental-strip-types src/dev-audit.ts",

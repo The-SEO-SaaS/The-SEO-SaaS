@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { trackEvent } from "@/components/analytics";
 import { useMutation, usePolling, useQuery } from "@/hooks/use-request";
 import { auditApi, type AuditProgress, type AuditReport } from "@/lib/api";
 import { isApiError } from "@/lib/api-client";
@@ -19,7 +20,13 @@ export function useStartAudit() {
   const router = useRouter();
 
   const mutation = useMutation((domain: string) => auditApi.start(domain), {
-    onSuccess: (result) => router.push(`/audit/${result.publicId}`),
+    onSuccess: (result) => {
+      // Top of the funnel. `reused` separates a genuine new audit from a cache
+      // hit on a domain someone already ran today — without it, a shared link
+      // getting clicked ten times looks like ten conversions.
+      trackEvent("audit_started", { reused: result.reused });
+      router.push(`/audit/${result.publicId}`);
+    },
   });
 
   return {
@@ -51,6 +58,23 @@ export function useAuditFlow(publicId: string) {
 
   const isComplete = progress.data?.status === "COMPLETED";
   const isFailed = progress.data?.status === "FAILED";
+
+  // Reported once per outcome, not once per poll — `usePolling` re-renders every
+  // 1.5s and would otherwise fire an event on each tick after the terminal
+  // state. The ref, not state, because this must not itself cause a render.
+  const reported = React.useRef(false);
+
+  React.useEffect(() => {
+    if (reported.current) return;
+    if (!isComplete && !isFailed) return;
+
+    reported.current = true;
+    trackEvent(isComplete ? "audit_completed" : "audit_failed", {
+      // Pairs with audit_started's own duration, giving a real distribution of
+      // how long people wait rather than the eight minutes the copy promises.
+      step: progress.data?.currentStep ?? "unknown",
+    });
+  }, [isComplete, isFailed, progress.data?.currentStep]);
 
   // The report is only fetched once the audit finishes — polling it alongside
   // progress would repeatedly pull a large payload that isn't ready.

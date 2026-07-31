@@ -103,6 +103,31 @@ export interface KeywordGap {
   rationale: string | null;
 }
 
+/**
+ * Site-level facts the crawler establishes on every run.
+ *
+ * Every field is nullable because an audit from before this shipped has none of
+ * them, and "we didn't record this" has to stay distinguishable from "we
+ * checked and the answer is no" — which is exactly the ambiguity that made
+ * these worth surfacing in the first place.
+ */
+export interface CrawlFacts {
+  /** Where the domain actually resolved to, after redirects. */
+  finalUrl: string | null;
+  title: string | null;
+  metaDescription: string | null;
+  /** The one hard number behind the Speed category score. */
+  avgResponseTimeMs: number | null;
+  isHttps: boolean | null;
+  hasRobotsTxt: boolean | null;
+  hasSitemap: boolean | null;
+  /** True means the site is telling search engines to stay out. */
+  blocksIndexing: boolean | null;
+  homepageWordCount: number | null;
+  hasStructuredData: boolean | null;
+  hasOpenGraph: boolean | null;
+}
+
 export interface AuditReport {
   id: string;
   publicId: string;
@@ -124,6 +149,14 @@ export interface AuditReport {
   healthy: string[];
   /** 0–100 per report section. Null for audits run before this existed. */
   categories: Record<IssueCategory, number> | null;
+
+  /**
+   * Raw findings from the crawl, stated as facts rather than as issues.
+   *
+   * Null for audits run before these were persisted — render nothing in that
+   * case rather than a row of confident falses.
+   */
+  crawl: CrawlFacts | null;
 
   issues: AuditIssue[];
   competitors: CompetitorSummary[];

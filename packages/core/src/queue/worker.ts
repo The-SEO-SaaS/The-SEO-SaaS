@@ -5,7 +5,9 @@ import {
   claimJobs,
   completeJob,
   failJob,
+  heartbeatJob,
   reclaimStalledJobs,
+  releaseJob,
   updateProgress,
   type QueuedJob,
 } from "./queue.ts";
@@ -17,6 +19,13 @@ import {
  * take far longer than any serverless timeout allows, which is exactly why the
  * work is queued rather than run inline.
  */
+
+/**
+ * How often a running job refreshes its lock. Four beats inside the two-minute
+ * stall threshold, so a single slow write or brief database blip can't get a
+ * healthy job reclaimed out from under itself.
+ */
+const HEARTBEAT_MS = 30_000;
 
 export interface JobContext {
   jobId: string;
@@ -63,6 +72,17 @@ export function createWorker(options: WorkerOptions): Worker {
 
   async function runJob(job: QueuedJob): Promise<void> {
     active++;
+
+    // Keeps `lockedAt` fresh for as long as this job runs, so the stall sweep
+    // can tell a slow job from a dead worker. Without it the sweep was really
+    // asking "did this start a long time ago?", which for an audit is a yes
+    // well before it's finished.
+    const heartbeat = setInterval(() => {
+      void heartbeatJob(job.id);
+    }, HEARTBEAT_MS);
+    // Don't hold the event loop open on this timer alone.
+    heartbeat.unref?.();
+
     try {
       const handler = handlers[job.type];
       if (!handler) {
@@ -79,9 +99,20 @@ export function createWorker(options: WorkerOptions): Worker {
 
       await completeJob(job.id, result ?? undefined);
     } catch (error) {
-      onError?.(error, job);
-      await failJob(job.id, error, job.attempts, job.maxAttempts).catch(() => {});
+      // A shutdown isn't a failure. When the abort signal is what stopped this
+      // handler, hand the job straight back without consuming an attempt — two
+      // `--watch` restarts would otherwise exhaust an audit's maxAttempts of 2
+      // and mark real work permanently dead.
+      if (controller.signal.aborted) {
+        await releaseJob(job.id, "Worker shut down mid-job; released for retry.").catch(
+          () => {},
+        );
+      } else {
+        onError?.(error, job);
+        await failJob(job.id, error, job.attempts, job.maxAttempts).catch(() => {});
+      }
     } finally {
+      clearInterval(heartbeat);
       active--;
     }
   }
@@ -130,7 +161,9 @@ export function createWorker(options: WorkerOptions): Worker {
       running = false;
       controller.abort();
 
-      // Let in-flight jobs finish so they aren't left ACTIVE and stranded.
+      // Let in-flight jobs notice the abort and release themselves. Anything
+      // still running past the deadline is left ACTIVE with a stale heartbeat,
+      // which the next worker's stall sweep picks up within two minutes.
       const deadline = Date.now() + 30_000;
       while (active > 0 && Date.now() < deadline) {
         await sleep(200);

@@ -230,7 +230,21 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     counts?: { critical: number; warning: number; notice: number };
     healthy?: string[];
     categories?: Record<"TECHNICAL" | "ON_PAGE" | "CONTENT" | "SPEED", number>;
-    crawl?: { pagesCrawled?: number; pagesDiscovered?: number };
+    crawl?: {
+      pagesCrawled?: number;
+      pagesDiscovered?: number;
+      finalUrl?: string;
+      title?: string | null;
+      metaDescription?: string | null;
+      avgResponseTimeMs?: number;
+      isHttps?: boolean;
+      hasRobotsTxt?: boolean;
+      hasSitemap?: boolean;
+      blocksIndexing?: boolean;
+      homepageWordCount?: number;
+      hasStructuredData?: boolean;
+      hasOpenGraph?: boolean;
+    };
   };
 
   const isOwner = Boolean(viewerId && audit.userId === viewerId);
@@ -261,6 +275,34 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
 
     pagesCrawled: audit.pagesCrawled || raw.crawl?.pagesCrawled || 0,
     pagesDiscovered: raw.crawl?.pagesDiscovered ?? 0,
+
+    /**
+     * What the crawler actually found, as facts rather than as issues.
+     *
+     * These were being computed, used to derive issues, then discarded. A
+     * reader can't tell "we checked and you have a sitemap" from "we didn't
+     * check" when the only evidence is the absence of a finding — and the
+     * response time is the one hard number behind the Speed category, which
+     * otherwise shows a score with nothing underneath it.
+     *
+     * Null on audits run before this was stored, so the UI can omit the strip
+     * rather than render a row of confident falses.
+     */
+    crawl: raw.crawl
+      ? {
+          finalUrl: raw.crawl.finalUrl ?? null,
+          title: raw.crawl.title ?? null,
+          metaDescription: raw.crawl.metaDescription ?? null,
+          avgResponseTimeMs: raw.crawl.avgResponseTimeMs ?? null,
+          isHttps: raw.crawl.isHttps ?? null,
+          hasRobotsTxt: raw.crawl.hasRobotsTxt ?? null,
+          hasSitemap: raw.crawl.hasSitemap ?? null,
+          blocksIndexing: raw.crawl.blocksIndexing ?? null,
+          homepageWordCount: raw.crawl.homepageWordCount ?? null,
+          hasStructuredData: raw.crawl.hasStructuredData ?? null,
+          hasOpenGraph: raw.crawl.hasOpenGraph ?? null,
+        }
+      : null,
     counts: raw.counts ?? { critical: 0, warning: 0, notice: 0 },
     healthy: raw.healthy ?? [],
     /** Null for audits run before category scoring existed. */
