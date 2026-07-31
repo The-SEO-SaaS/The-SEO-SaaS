@@ -108,8 +108,6 @@ RUN pnpm --filter @theseosaas/db db:generate
 # build-time semantics. They get their own values.
 ENV NODE_ENV=production
 
-# `next build` writes .next/standalone as well (output: "standalone" in next.config.ts); the
-# runner ignores it, but leaving the setting alone keeps the option open.
 RUN pnpm --filter web build
 
 # public/ isn't in the repo today. Next doesn't create it, and a COPY of a missing path is a
@@ -156,7 +154,21 @@ EXPOSE 3001
 
 WORKDIR /app/apps/web
 
-# No migrate step here, on purpose — apps/worker owns schema migration (see its Dockerfile).
-# Two services racing `prisma migrate deploy` against one database during a rolling deploy is a
-# reliable way to sit on Prisma's advisory lock until something times out.
-CMD ["pnpm", "start"]
+# Migrations run here, before the server accepts traffic.
+#
+# This used to be deferred to apps/worker on the theory that there should be exactly one
+# migrator. True in principle, wrong in practice: the worker is a separate Coolify application
+# and isn't always deployed, so a web-only deploy shipped code that expected tables the database
+# had never been given. The symptom was P2021 `The table public.RateLimit does not exist` on the
+# first magic-link request — a migration that had existed in the repo since day one and had
+# simply never been applied anywhere.
+#
+# Racing the worker is survivable: `migrate deploy` takes a Postgres advisory lock, so
+# concurrent migrators serialise rather than corrupt. Deadlocking on that lock is a far better
+# failure than silently booting against a schema from three releases ago.
+#
+# `migrate deploy`, not the package.json "db:migrate" script — that's `migrate dev`, which is
+# interactive and will offer to reset a database it doesn't recognise.
+#
+# `exec` so SIGTERM reaches Next directly instead of the shell.
+CMD ["sh", "-c", "cd /app/packages/db && pnpm exec prisma migrate deploy && cd /app/apps/web && exec pnpm start"]

@@ -32,4 +32,5 @@ export * as billing from "./billing/index.ts";
 export * as tracking from "./tracking/index.ts";
 export * as mail from "./mail/index.ts";
 export * as health from "./health/index.ts";
+export * as marketing from "./marketing/index.ts";
 export * as util from "./util/index.ts";

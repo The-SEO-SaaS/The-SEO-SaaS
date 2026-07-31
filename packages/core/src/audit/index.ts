@@ -40,3 +40,5 @@ export {
   type AuditHistory,
   type AuditHistoryEntry,
 } from "./history.ts";
+
+export { renderAuditPdf } from "./pdf.ts";

@@ -1,65 +1,20 @@
+import { BRAND, FONT, button, escapeHtml, layout, paragraph } from "./brand.ts";
+
 /**
  * Email templates.
  *
- * Written as plain functions returning HTML strings — no template engine, no
- * React Email. Styles are inline because every major email client strips
- * <style> blocks, and the palette matches the Trust Blue design system.
+ * Plain functions returning HTML strings — no template engine, no React Email.
+ * Chrome (masthead, footer, button, palette) lives in ./brand.ts so every
+ * message is recognisably the same product; this file only decides what each
+ * one says.
+ *
+ * Every template returns `text` as well as `html`, and the text version is
+ * written rather than stripped. A missing plain-text part measurably hurts
+ * deliverability, and for a sender with no domain reputation yet that matters
+ * more than it would for an established one.
  */
 
-const BRAND = {
-  primary: "#2563EB",
-  accent: "#F97316",
-  text: "#0F172A",
-  muted: "#64748B",
-  border: "#E2E8F0",
-  background: "#F8FAFC",
-} as const;
-
-/** Prevents user-supplied values (names, page titles) breaking the markup. */
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function layout(options: { heading: string; body: string; preheader: string }): string {
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-  </head>
-  <body style="margin:0;padding:0;background:${BRAND.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif;">
-    <!-- Preheader: shown in the inbox preview, hidden in the body. -->
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(options.preheader)}</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.background};padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border:1px solid ${BRAND.border};border-radius:12px;padding:32px;">
-            <tr>
-              <td>
-                <p style="margin:0 0 24px;font-size:15px;font-weight:600;color:${BRAND.primary};letter-spacing:-0.01em;">TheSEOSaaS</p>
-                <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;font-weight:600;color:${BRAND.text};letter-spacing:-0.02em;">${escapeHtml(options.heading)}</h1>
-                ${options.body}
-              </td>
-            </tr>
-          </table>
-          <p style="max-width:520px;margin:20px auto 0;font-size:12px;line-height:1.5;color:${BRAND.muted};">
-            You received this because someone entered this address at TheSEOSaaS. If it wasn't you, you can ignore it safely.
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
-}
-
-function button(url: string, label: string): string {
-  return `<a href="${url}" style="display:inline-block;background:${BRAND.primary};color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:8px;">${escapeHtml(label)}</a>`;
-}
+export { escapeHtml };
 
 export interface MagicLinkTemplateInput {
   url: string;
@@ -72,23 +27,23 @@ export function magicLinkTemplate(input: MagicLinkTemplateInput): {
   html: string;
   text: string;
 } {
-  const heading = input.isNewUser
-    ? "Let's get your SEO moving"
-    : "Sign in to TheSEOSaaS";
+  const heading = input.isNewUser ? "Let's get your SEO moving" : "Sign in to TheSEOSaaS";
   const label = input.isNewUser ? "Create my account" : "Sign in";
 
   const html = layout({
     heading,
+    // The expiry, not the greeting. Someone scanning an inbox for a sign-in
+    // link needs to know whether this one is still good.
     preheader: `Your sign-in link expires in ${input.expiresInMinutes} minutes.`,
     body: `
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-        Click below to ${input.isNewUser ? "finish setting up your account" : "sign in"}. This link works once and expires in ${input.expiresInMinutes} minutes.
-      </p>
+      ${paragraph(
+        `Click below to ${
+          input.isNewUser ? "finish setting up your account" : "sign in"
+        }. This link works once and expires in ${input.expiresInMinutes} minutes.`,
+      )}
       <p style="margin:0 0 24px;">${button(input.url, label)}</p>
-      <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:${BRAND.muted};">
-        Or paste this into your browser:
-      </p>
-      <p style="margin:0;font-size:13px;line-height:1.6;word-break:break-all;color:${BRAND.primary};">${input.url}</p>
+      ${paragraph("Or paste this into your browser:", "0 0 6px")}
+      <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;line-height:1.6;word-break:break-all;color:${BRAND.ink};">${input.url}</p>
     `,
   });
 
@@ -112,27 +67,47 @@ export interface AuditReadyTemplateInput {
   headline: string;
 }
 
+/** Matches the report's own bands, so the email and the page can't disagree. */
+function scoreTone(score: number): { fill: string; text: string; label: string } {
+  if (score >= 75) return { fill: BRAND.goodSoft, text: BRAND.good, label: "Good" };
+  if (score >= 50) return { fill: BRAND.warnSoft, text: BRAND.warn, label: "Fair" };
+  return { fill: BRAND.badSoft, text: BRAND.bad, label: "Needs work" };
+}
+
 export function auditReadyTemplate(input: AuditReadyTemplateInput): {
   subject: string;
   html: string;
   text: string;
 } {
   const heading = `Your SEO audit for ${input.domain} is ready`;
+  const tone = scoreTone(input.score);
 
   const html = layout({
     heading,
     preheader: input.headline,
     body: `
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-        ${escapeHtml(input.headline)}
-      </p>
-      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:${BRAND.background};border-radius:8px;padding:16px 20px;">
+      ${paragraph(escapeHtml(input.headline))}
+
+      <!-- Score panel. The number is the reason to open the link, so it's
+           shown here rather than making someone click to find out. -->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+             style="margin:0 0 24px;width:100%;background:${tone.fill};border-radius:12px;">
         <tr>
-          <td style="font-size:13px;color:${BRAND.muted};padding-right:16px;">SEO score</td>
-          <td style="font-size:24px;font-weight:600;color:${BRAND.text};">${input.score}</td>
+          <td style="padding:18px 22px;">
+            <p style="margin:0 0 2px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:0.08em;color:${tone.text};">SEO SCORE</p>
+            <p style="margin:0;font-family:${FONT};font-size:34px;font-weight:600;line-height:1.1;letter-spacing:-0.03em;color:${tone.text};">
+              ${input.score}<span style="font-size:17px;font-weight:500;opacity:0.6;">/100</span>
+              <span style="font-size:14px;font-weight:600;padding-left:8px;">${tone.label}</span>
+            </p>
+          </td>
         </tr>
       </table>
-      <p style="margin:0;">${button(input.url, "View my full audit")}</p>
+
+      <p style="margin:0 0 20px;">${button(input.url, "Read the full report")}</p>
+      ${paragraph(
+        "The report stays available at that link — it's shareable, so you can send it to whoever owns the site.",
+        "0",
+      )}
     `,
   });
 
@@ -140,9 +115,12 @@ export function auditReadyTemplate(input: AuditReadyTemplateInput): {
     heading,
     "",
     input.headline,
-    `SEO score: ${input.score}`,
     "",
-    `View your full audit: ${input.url}`,
+    `SEO score: ${input.score}/100 (${tone.label})`,
+    "",
+    `Read the full report: ${input.url}`,
+    "",
+    "That link is shareable and stays available.",
   ].join("\n");
 
   return { subject: heading, html, text };

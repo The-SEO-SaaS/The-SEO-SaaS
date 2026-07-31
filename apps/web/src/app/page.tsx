@@ -17,7 +17,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import type { Metadata } from "next";
+
 import { AuditInput } from "@/components/marketing/audit-input";
+import { pageMetadata, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { PricingTable } from "@/components/marketing/pricing-table";
 import { ProductShot } from "@/components/marketing/product-shot";
 import { ProofCard } from "@/components/marketing/proof-card";
@@ -30,6 +33,73 @@ import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-ch
  * that one island ships JavaScript. The page's whole job is to get a domain
  * into that input.
  */
+
+/**
+ * The landing page carries the site's primary title, so it overrides the root
+ * template rather than appending to it — "TheSEOSaaS — TheSEOSaaS" is what the
+ * template would otherwise produce on `/`.
+ *
+ * The description is written for a SERP snippet, not for us: it leads with
+ * "Free SEO audit" because that's the query intent this page competes for, and
+ * names the mechanism rather than the benefit, since every competing result in
+ * that SERP already promises more traffic.
+ */
+export const metadata: Metadata = {
+  ...pageMetadata({
+    title: "Free SEO audit for SaaS sites",
+    description:
+      "Paste your domain and see what's costing you search traffic. We crawl your site and the three competitors ranking above you, find the keywords they own and you don't, and write the pages that close the gap. No account needed.",
+    path: "/",
+  }),
+  title: {
+    absolute: "TheSEOSaaS — free SEO audit for SaaS sites",
+  },
+};
+
+/**
+ * Structured data.
+ *
+ * Two types, both earned rather than aspirational: `SoftwareApplication` with a
+ * real price range, and `Organization` so the brand's X profile is a declared
+ * `sameAs` rather than something Google has to infer.
+ *
+ * No `AggregateRating` and no `Review` — there are no reviews yet, and inventing
+ * them is both a Google policy violation and precisely the behaviour this
+ * product's own audits are meant to catch.
+ */
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      name: SITE_NAME,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: SITE_URL,
+      description:
+        "SEO audits, competitor tracking and AI-written content for SaaS websites.",
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "USD",
+        lowPrice: "19.99",
+        highPrice: "119.99",
+        offerCount: 3,
+      },
+    },
+    {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/web-app-manifest-512x512.png`,
+      sameAs: ["https://x.com/codewithkin"],
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "kin@theseosaas.com",
+        contactType: "customer support",
+      },
+    },
+  ],
+};
 
 /**
  * The engines the headline cycles through.
@@ -229,6 +299,17 @@ const CONTENT_ROWS = [
 export default function LandingPage() {
   return (
     <>
+      {/*
+        Inline rather than via next/script: structured data must be in the
+        server-rendered HTML for a crawler that doesn't execute JavaScript, and
+        next/script defers it past that point.
+      */}
+      <script
+        type="application/ld+json"
+        // Static object we control, no user input anywhere in it.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+      />
+
       <MarketingHeader />
 
       {/* --- Hero ---------------------------------------------------------- */}

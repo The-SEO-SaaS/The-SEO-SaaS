@@ -1,3 +1,10 @@
+"use client";
+
+import {
+  CountUp,
+  motion,
+  usePrefersReducedMotion,
+} from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
 import { Check, X } from "lucide-react";
 
@@ -56,6 +63,8 @@ export function CategoryStrip({
   categories: Category[];
   className?: string;
 }) {
+  const reduced = usePrefersReducedMotion();
+
   if (categories.length === 0) return null;
 
   return (
@@ -65,7 +74,7 @@ export function CategoryStrip({
         className,
       )}
     >
-      {categories.map((category) => {
+      {categories.map((category, index) => {
         const band = BAND[bandOf(category.score)];
         const isGood = bandOf(category.score) === "good";
 
@@ -92,13 +101,27 @@ export function CategoryStrip({
               <span
                 className={cn("text-[24px] font-medium tracking-[-0.02em]", band.score)}
               >
-                {category.score}
+                <CountUp value={category.score} />
               </span>
               <span className="text-[12px] text-[#6B7480]">/ 100</span>
             </div>
 
+            {/*
+              The bar fills as the number counts, staggered a beat per cell so
+              the strip reads left to right rather than as two things twitching
+              at once. Same decelerating curve as the score gauge above it.
+            */}
             <div className="mt-3 h-1 w-full max-w-[150px] overflow-hidden rounded-sm bg-[#F1F3F7]">
-              <div className={cn("h-full", band.bar)} style={{ width: `${category.score}%` }} />
+              <motion.div
+                className={cn("h-full", band.bar)}
+                initial={reduced ? false : { width: 0 }}
+                animate={{ width: `${category.score}%` }}
+                transition={{
+                  duration: reduced ? 0 : 0.9,
+                  delay: reduced ? 0 : 0.08 * index,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+              />
             </div>
 
             <p className="mt-2.5 text-[11.5px] leading-[1.5] text-[#6B7480]">

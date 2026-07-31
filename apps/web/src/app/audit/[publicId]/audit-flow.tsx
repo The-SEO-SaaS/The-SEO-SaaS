@@ -135,6 +135,7 @@ export function AuditFlow({ publicId }: { publicId: string }) {
             pagesCrawled={report.pagesCrawled}
             summary={report.summary}
             shareUrl={shareUrl}
+            publicId={publicId}
           />
 
           <ScorePanel

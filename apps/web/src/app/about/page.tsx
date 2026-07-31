@@ -6,12 +6,14 @@ import Link from "next/link";
 
 import { AuditInput } from "@/components/marketing/audit-input";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About — TheSEOSaaS",
+export const metadata: Metadata = pageMetadata({
+  title: "About",
   description:
     "Why TheSEOSaaS exists: most SEO tools stop at the diagnosis. We finish the job by writing the pages that close the gap.",
-};
+  path: "/about",
+});
 
 /**
  * About.

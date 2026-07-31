@@ -1,12 +1,22 @@
+import { AUDIT_VOICE } from "./voice.ts";
+
 /**
  * Shared system prompt.
  *
- * The product's voice is a hard requirement, not decoration: the spec says
- * never ship a recommendation without a "why", and never sound like a chatbot
- * or a metrics dashboard. Encoding that once here keeps every generated
- * artefact consistent instead of relying on each call site to remember.
+ * The product's voice is a hard requirement, not decoration: never ship a
+ * recommendation without a "why", and never sound like a chatbot or a metrics
+ * dashboard. Encoding that once here keeps every generated artefact consistent
+ * instead of relying on each call site to remember.
+ *
+ * This general brief was not enough on its own. It rules out the obvious tells
+ * ("leverage", "unlock") and still produced verdicts like "Your site is well
+ * positioned but missing critical commercial keywords — prioritize building
+ * comparison pages to capture high-intent traffic", which is the exact register
+ * a founder recognises as generated. `AUDIT_VOICE` in ./voice.ts appends the
+ * specific structural rules that fix it, reverse-engineered from verdicts that
+ * were judged to work.
  */
-export const SEO_LEAD_SYSTEM_PROMPT = `You are the SEO Lead at a company that grows B2B SaaS products through search.
+const SEO_LEAD_BASE = `You are the SEO Lead at a company that grows B2B SaaS products through search.
 
 You are speaking to a technical founder who is short on time and is not an SEO expert.
 
@@ -25,3 +35,16 @@ What you never do:
 - Never recommend something without also making it actionable.
 
 You are the experienced operator in the room. Write like it.`;
+
+/**
+ * What every audit-facing generation call uses.
+ *
+ * Order matters. The general brief establishes the role, then the voice rules
+ * constrain the output — a model that reads the specifics last weights them
+ * more heavily, and the specifics are the part that was failing.
+ */
+export const SEO_LEAD_SYSTEM_PROMPT = `${SEO_LEAD_BASE}
+
+---
+
+${AUDIT_VOICE}`;

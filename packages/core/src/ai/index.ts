@@ -11,3 +11,4 @@ export {
 } from "./openrouter.ts";
 
 export { SEO_LEAD_SYSTEM_PROMPT } from "./prompts.ts";
+export { AUDIT_VOICE, ISSUE_VOICE } from "./voice.ts";

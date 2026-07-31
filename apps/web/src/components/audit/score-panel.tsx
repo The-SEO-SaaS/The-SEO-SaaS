@@ -1,6 +1,10 @@
 "use client";
 
-import { CountUp } from "@theseosaas/ui/components/motion";
+import {
+  CountUp,
+  motion,
+  usePrefersReducedMotion,
+} from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 
@@ -56,6 +60,7 @@ export function ScorePanel({ score, band, counts, className }: ScorePanelProps) 
   const resolvedBand = band ?? (score >= 75 ? "GOOD" : score >= 50 ? "FAIR" : "POOR");
   const style = BAND_STYLE[resolvedBand];
   const BandIcon = resolvedBand === "GOOD" ? CheckCircle2 : AlertTriangle;
+  const reduced = usePrefersReducedMotion();
 
   return (
     <div
@@ -99,9 +104,23 @@ export function ScorePanel({ score, band, counts, className }: ScorePanelProps) 
           <div className="w-1/4 bg-[#D97706]" />
           <div className="w-1/4 bg-[#16A34A]" />
         </div>
-        <div
+        {/*
+          The needle travels in from zero on the same beat the number counts up,
+          so the two read as one measurement settling rather than a static
+          figure with a decorative animation next to it.
+
+          `ease` is a decelerating curve, not a spring: a needle that overshoots
+          past a score and bounces back looks like the number is uncertain,
+          which is the opposite of what this panel is for.
+        */}
+        <motion.div
           className="bg-ink-900 absolute -top-1 h-3.5 w-[2px] rounded-[1px]"
-          style={{ left: `${Math.max(0, Math.min(100, score))}%` }}
+          initial={reduced ? false : { left: "0%", opacity: 0 }}
+          animate={{
+            left: `${Math.max(0, Math.min(100, score))}%`,
+            opacity: 1,
+          }}
+          transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
         />
       </div>
 

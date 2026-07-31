@@ -50,8 +50,32 @@ export const env = createEnv({
     CORS_ORIGIN: z.url(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
-    /** Public origin. Used for OAuth redirects, magic links, and email URLs. */
-    APP_URL: z.url(),
+    /**
+     * Public origin. Used for OAuth redirects, magic links, and email URLs.
+     *
+     * Refused when it points at localhost in production, because the failure it
+     * causes doesn't look like a configuration error. Google is handed
+     * `redirect_uri = APP_URL + /api/auth/google/callback`, so an unset value
+     * sends real users to `http://localhost:3001/...` with a valid auth code
+     * attached — the sign-in appears to work right up until the browser can't
+     * reach the address. Magic links land in inboxes pointing at the
+     * recipient's own machine, with the same result.
+     *
+     * Nothing downstream can detect this: from the server's side the redirect
+     * was issued successfully. Catching it at boot turns a silent, unreportable
+     * dead end into a container that won't start and says why.
+     */
+    APP_URL: z
+      .url()
+      .refine(
+        (value) =>
+          process.env.NODE_ENV !== "production" ||
+          !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(value),
+        {
+          message:
+            "APP_URL points at localhost in production. Set it to the public origin (e.g. https://theseosaas.com) — OAuth redirects and magic links are built from it and would send users to their own machine.",
+        },
+      ),
 
     // --- Auth: Google OAuth (hand-rolled, no auth library) -----------------
     GOOGLE_CLIENT_ID: z.string().min(1),

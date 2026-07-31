@@ -9,6 +9,7 @@ import {
   MarketingHeader,
 } from "@/components/marketing/site-chrome";
 import { getAllPosts, getPost } from "@/lib/blog";
+import { pageMetadata } from "@/lib/seo";
 
 /**
  * /blog/[slug] — one Field Notes article.
@@ -30,13 +31,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = getPost(slug);
 
-  if (!post) return { title: "Not found — TheSEOSaaS" };
+  if (!post) return { title: "Not found" };
 
-  return {
-    title: `${post.title} — TheSEOSaaS`,
+  return pageMetadata({
+    title: post.title,
     description: post.excerpt,
-    openGraph: { title: post.title, description: post.excerpt, type: "article" },
-  };
+    path: `/blog/${slug}`,
+    type: "article",
+    publishedTime: post.date,
+  });
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {

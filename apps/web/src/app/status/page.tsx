@@ -7,12 +7,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Status — TheSEOSaaS",
+export const metadata: Metadata = pageMetadata({
+  title: "Status",
   description:
-    "Live status for the audit engine, search data, content generation, email and the database.",
-};
+    "Live status for the audit engine, search data, content generation, email and the database. Every check on this page runs when you load it.",
+  path: "/status",
+});
 
 /**
  * Public status page.

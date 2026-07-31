@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@theseosaas/ui/components/card";
+import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
 import { Check, Minus, X } from "lucide-react";
 
@@ -108,15 +109,17 @@ export function CrawlFactsSection({
 
   return (
     <section className="space-y-4">
-      <div>
+      <FadeIn whenInView>
         <h2 className="font-display text-ink-900 text-[20px] font-semibold tracking-[-0.02em]">
           What we found on your site
         </h2>
         <p className="mt-1.5 text-[13.5px] leading-[1.6] text-[#5B6472]">
           Every check this crawl ran, including the ones that passed.
         </p>
-      </div>
+      </FadeIn>
 
+      <Stagger className="space-y-4">
+        <StaggerItem>
       <Card variant="panel">
         <CardContent className="grid gap-x-10 gap-y-1 sm:grid-cols-2">
           <div>
@@ -131,7 +134,9 @@ export function CrawlFactsSection({
           </div>
         </CardContent>
       </Card>
+        </StaggerItem>
 
+        <StaggerItem>
       {/*
         Measurements, kept apart from the pass/fail list — a number with no
         threshold attached isn't a check, and dressing it up as one would imply
@@ -167,6 +172,8 @@ export function CrawlFactsSection({
           />
         </CardContent>
       </Card>
+        </StaggerItem>
+      </Stagger>
 
       {crawl.finalUrl ? (
         <p className="text-[12px] text-[#6B7480]">

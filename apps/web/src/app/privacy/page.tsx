@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 
 import { LegalPage, type LegalSection } from "@/components/marketing/legal-page";
 import { MarketingFooter } from "@/components/marketing/site-chrome";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy — TheSEOSaaS",
-  description: "What we collect, why, and how long we keep it.",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Privacy Policy",
+  description:
+    "What we collect, why, and how long we keep it. No passwords are ever stored, sessions are hashed, and audit data belongs to the account that claimed it.",
+  path: "/privacy",
+});
 
 /**
  * The design notes this screen shares the /terms template, so it does — only

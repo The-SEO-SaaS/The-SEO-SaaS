@@ -4,6 +4,7 @@ import { Instrument_Sans, Inter } from "next/font/google";
 import "../index.css";
 import { GoogleAnalytics } from "@/components/analytics";
 import Providers from "@/components/providers";
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
 
 /**
  * Fonts match the design file: Instrument Sans for display/headings, Inter for
@@ -29,13 +30,49 @@ const instrumentSans = Instrument_Sans({
  * emits the corresponding <link> tags itself. The only piece it can't infer is
  * the iOS home-screen title, which is what `appleWebApp.title` sets.
  */
+/**
+ * Root metadata.
+ *
+ * `metadataBase` is the important line: without it every relative Open Graph
+ * and Twitter image resolves to a relative URL, which crawlers discard
+ * silently — so a shared link renders as a bare blue text link with no card.
+ *
+ * `title.template` means each page sets only its own name and the brand suffix
+ * is appended once, here, instead of being retyped (and eventually mistyped) on
+ * every route.
+ */
 export const metadata: Metadata = {
-  title: "TheSEOSaaS — Your AI SEO Growth Team",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "TheSEOSaaS — find what your site is losing in search",
+    template: `%s — ${SITE_NAME}`,
+  },
   description:
-    "We don't just tell you how to improve your SEO — we build the assets that grow your traffic.",
+    "Free SEO audit for SaaS sites. We crawl your site and the competitors ranking above you, find the keywords they own and you don't, then write the pages that close the gap.",
+  applicationName: SITE_NAME,
+  keywords: [
+    "SEO audit",
+    "SaaS SEO",
+    "keyword gap analysis",
+    "competitor SEO analysis",
+    "AI content generation",
+    "technical SEO audit",
+  ],
+  authors: [{ name: "Kin", url: "https://x.com/codewithkin" }],
+  creator: "Kin",
+  publisher: SITE_NAME,
   appleWebApp: {
     title: "The SEO SaaS",
   },
+  // Stops phone numbers and addresses being auto-linked in iOS Safari, which
+  // mangles domains rendered in report copy.
+  formatDetection: { telephone: false, address: false },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_GB",
+  },
+  twitter: { card: "summary_large_image", creator: "@codewithkin" },
 };
 
 export default function RootLayout({

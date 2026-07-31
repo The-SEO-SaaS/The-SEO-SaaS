@@ -87,7 +87,10 @@ export function AddSiteFlow() {
 
   if (flow.phase === "domain") {
     return (
-      <Shell title="Add a site" subtitle="We'll run a free audit on it first, same as day one.">
+      <Shell
+        title="Which site are we adding?"
+        subtitle="We'll crawl it and check it against the competitors ranking above it — the same audit as your first site."
+      >
         <form
           className="space-y-4"
           onSubmit={(event) => {
@@ -95,16 +98,24 @@ export function AddSiteFlow() {
             if (domain.trim()) flow.startAudit(domain.trim());
           }}
         >
-          <div className="bg-surface border-line focus-within:border-ink-900 focus-within:ring-ring/10 flex items-center gap-1.5 rounded-lg border px-3 py-2.5 transition-colors focus-within:ring-2">
-            <span className="text-ink-300 shrink-0 text-base">https://</span>
+          {/*
+            Same shape as the marketing hero's input — 12px radius, the scheme
+            as a static adornment rather than something to type. Someone adding
+            their second site has already used that field once; making this one
+            look different is a small, avoidable friction.
+          */}
+          <div className="bg-surface flex items-center gap-1.5 rounded-xl border border-[#E2E6EC] px-4 py-3 transition-colors focus-within:border-[#0B1220] focus-within:ring-2 focus-within:ring-[#0B1220]/10">
+            <span className="shrink-0 text-[15px] text-[#9AA2AF]">https://</span>
             <input
               autoFocus
               value={domain}
               onChange={(event) => setDomain(event.target.value)}
               placeholder="acme.com"
-              className="text-ink-900 min-w-0 flex-1 bg-transparent text-base outline-none"
+              aria-label="Your site's domain"
+              className="text-ink-900 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-[#C6CDD8]"
               spellCheck={false}
               inputMode="url"
+              autoComplete="url"
             />
           </div>
 
@@ -269,33 +280,71 @@ function Shell({
   step?: SetupStep;
   children: React.ReactNode;
 }) {
+  const stepIndex = step ? SETUP_STEP_ORDER.indexOf(step) : -1;
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-16">
-      <FadeIn key={title} className="space-y-6">
-        <div className="space-y-2">
+    <main className="mx-auto w-full max-w-[720px] px-5 py-10 sm:px-6 sm:py-14">
+      <FadeIn key={title} className="space-y-7">
+        <div className="space-y-4">
+          {/*
+            Eyebrow with a step counter, matching onboarding. Previously this
+            screen opened on a bare 2xl heading with no indication of where you
+            were or how much was left — the one thing a multi-step form owes
+            you.
+          */}
+          <div className="flex items-center gap-2.5">
+            <span className="text-[11px] font-semibold tracking-[0.12em] text-[#6B7480]">
+              ADD A SITE
+            </span>
+            {step ? (
+              <>
+                <span className="text-[#C6CDD8]">·</span>
+                <span className="text-[11.5px] text-[#6B7480]">
+                  Step {stepIndex + 1} of {SETUP_STEP_ORDER.length}
+                </span>
+              </>
+            ) : null}
+          </div>
+
           {step ? (
             <div className="flex items-center gap-1.5">
-              {SETUP_STEP_ORDER.map((item) => (
+              {SETUP_STEP_ORDER.map((item, index) => (
                 <span
                   key={item}
                   className={cn(
-                    "h-1 flex-1 rounded-full transition-colors",
-                    SETUP_STEP_ORDER.indexOf(item) <= SETUP_STEP_ORDER.indexOf(step)
-                      ? "bg-ink-900"
-                      : "bg-line",
+                    "h-[3px] flex-1 rounded-full transition-colors duration-500",
+                    index <= stepIndex ? "bg-ink-900" : "bg-[#EDEFF3]",
                   )}
                 />
               ))}
             </div>
           ) : null}
 
-          <h1 className="font-display text-ink-900 text-2xl font-semibold tracking-tight sm:text-3xl">
-            {title}
-          </h1>
-          {subtitle ? <p className="text-ink-400 text-base leading-relaxed">{subtitle}</p> : null}
+          <div className="space-y-2.5">
+            <h1 className="font-display text-ink-900 text-[26px] font-semibold tracking-[-0.032em] sm:text-[31px]">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="max-w-[54ch] text-[15px] leading-[1.65] text-[#5B6472]">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        {children}
+        {/*
+          The body sits in the same bordered panel every other surface uses.
+          The old version put form controls straight onto the page background,
+          which is why this screen read as unfinished next to onboarding and the
+          report.
+        */}
+        <div className="rounded-2xl border border-[#E2E6EC] bg-white p-5 sm:p-7">
+          {children}
+        </div>
+
+        <p className="text-[12.5px] text-[#6B7480]">
+          Everything here can be changed later in Settings.
+        </p>
       </FadeIn>
     </main>
   );

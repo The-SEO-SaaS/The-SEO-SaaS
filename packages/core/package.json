@@ -20,12 +20,14 @@
     "@theseosaas/db": "workspace:*",
     "@theseosaas/env": "workspace:*",
     "nodemailer": "^7.0.9",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "pdfkit": "^0.17.2"
   },
   "devDependencies": {
     "@theseosaas/config": "workspace:*",
     "@types/node": "^22.13.14",
     "@types/nodemailer": "^7.0.5",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@types/pdfkit": "^0.17.4"
   }
 }

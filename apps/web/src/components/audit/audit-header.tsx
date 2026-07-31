@@ -4,7 +4,7 @@ import { BrandGlyph } from "@theseosaas/ui/components/brand-mark";
 import { Button } from "@theseosaas/ui/components/button";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { cn } from "@theseosaas/ui/lib/utils";
-import { Check, Link2 } from "lucide-react";
+import { Check, FileDown, Link2 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -74,6 +74,7 @@ export function ReportMeta({
   pagesCrawled,
   summary,
   shareUrl,
+  publicId,
   className,
 }: {
   domain: string;
@@ -81,6 +82,8 @@ export function ReportMeta({
   pagesCrawled: number;
   summary?: string | null;
   shareUrl?: string;
+  /** Needed for the PDF link; the share URL isn't parsed for it. */
+  publicId: string;
   className?: string;
 }) {
   const [copied, setCopied] = React.useState(false);
@@ -140,6 +143,25 @@ export function ReportMeta({
               "Copy link"
             )}
           </button>
+
+          {/*
+            A plain <a>, not a fetch-and-blob. The route sets
+            Content-Disposition, so the browser's own viewer handles it —
+            which is what people expect from a PDF link and avoids holding a
+            multi-megabyte buffer in memory on a phone.
+
+            `target="_blank"` because the report page is the thing they were
+            reading; replacing it with a PDF viewer loses their place.
+          */}
+          <a
+            href={`/api/audit/${publicId}/pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-ink-900 inline-flex items-center gap-1.5 text-[12.5px] font-medium no-underline hover:no-underline"
+          >
+            <FileDown className="size-3.5" strokeWidth={1.8} />
+            PDF
+          </a>
 
           <span className="text-[12.5px] text-[#6B7480]">·</span>
           <span className="text-[12.5px] text-[#6B7480]">

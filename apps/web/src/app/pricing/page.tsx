@@ -6,12 +6,14 @@ import type { Metadata } from "next";
 
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
 import { PricingTable } from "@/components/marketing/pricing-table";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Pricing — TheSEOSaaS",
+export const metadata: Metadata = pageMetadata({
+  title: "Pricing",
   description:
     "Every plan includes every feature. Pick the limits that match how much you plan to publish. From $19.99 a month, cancel any time.",
-};
+  path: "/pricing",
+});
 
 /**
  * Standalone pricing route.

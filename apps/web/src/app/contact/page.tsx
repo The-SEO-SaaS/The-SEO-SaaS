@@ -6,12 +6,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Contact — TheSEOSaaS",
+export const metadata: Metadata = pageMetadata({
+  title: "Contact",
   description:
     "Email kin@theseosaas.com or find us on X. Questions about a report, a bug, or a plan all go to the person who wrote the code.",
-};
+  path: "/contact",
+});
 
 const EMAIL = "kin@theseosaas.com";
 const X_HANDLE = "codewithkin";

@@ -6,12 +6,14 @@ import Link from "next/link";
 
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
 import { getAllPosts, getTopics, type BlogSummary } from "@/lib/blog";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Field notes — TheSEOSaaS",
+export const metadata: Metadata = pageMetadata({
+  title: "Field notes",
   description:
     "What we learn running audits all day. No growth-hacking listicles — just the patterns we see across a few thousand crawls a month, and what we do about them.",
-};
+  path: "/blog",
+});
 
 /**
  * /blog — the design's "Field Notes" index.

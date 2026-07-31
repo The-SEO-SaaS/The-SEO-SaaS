@@ -5,7 +5,7 @@ import { Button } from "@theseosaas/ui/components/button";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { AnimatePresence, motion } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, Check, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
@@ -184,6 +184,89 @@ export function MarketingHeader() {
   );
 }
 
+/**
+ * Newsletter capture.
+ *
+ * This form used to be `onSubmit={(e) => e.preventDefault()}` and nothing
+ * else — it took an address and dropped it. It now posts to /api/subscribe.
+ *
+ * The success state replaces the form rather than sitting beside it. A cleared
+ * input under a confirmation message is the classic way to make someone submit
+ * twice, because the field looking empty reads as "that didn't work".
+ *
+ * Errors are shown but stay quiet in tone. The worst realistic outcome here is
+ * a missed newsletter signup, and a red alert over it would be out of
+ * proportion to what just happened.
+ */
+function SubscribeForm() {
+  const [email, setEmail] = React.useState("");
+  const [state, setState] = React.useState<"idle" | "saving" | "done" | "error">("idle");
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const value = email.trim();
+    if (!value || state === "saving") return;
+
+    setState("saving");
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: value, source: "footer" }),
+      });
+
+      if (!response.ok) throw new Error("Subscribe failed");
+      setState("done");
+      setEmail("");
+    } catch {
+      setState("error");
+    }
+  };
+
+  if (state === "done") {
+    return (
+      <p className="mt-3 flex max-w-[340px] items-center gap-2 text-[13px] text-[#D6DCE6]">
+        <Check className="size-[14px] shrink-0 text-[#4ADE80]" strokeWidth={2.4} />
+        You&apos;re on the list. Nothing until there&apos;s something worth sending.
+      </p>
+    );
+  }
+
+  return (
+    <form className="mt-3 max-w-[340px]" onSubmit={handleSubmit}>
+      <div className="flex items-center gap-2.5">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            if (state === "error") setState("idle");
+          }}
+          placeholder="Your email address"
+          aria-label="Your email address"
+          autoComplete="email"
+          className="min-w-0 flex-1 rounded-[10px] border border-[#2A3446] bg-transparent px-4 py-[11px] text-[13px] text-white outline-none transition-colors placeholder:text-[#7C8798] focus-visible:border-[#4A5462]"
+        />
+        <button
+          type="submit"
+          disabled={!email.trim() || state === "saving"}
+          aria-label="Subscribe"
+          className="text-ink-900 flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          <ArrowUpRight className="size-[13px]" strokeWidth={1.9} />
+        </button>
+      </div>
+
+      {state === "error" ? (
+        <p className="mt-2 text-[12px] text-[#9AA6B8]">
+          That didn&apos;t save. Try again, or email us instead.
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
 const FOOTER_COLUMNS = [
   {
     title: "PRODUCT",
@@ -251,24 +334,7 @@ export function MarketingFooter() {
               Monthly field notes from a few thousand crawls
             </p>
 
-            <form
-              className="mt-3 flex max-w-[340px] items-center gap-2.5"
-              onSubmit={(event) => event.preventDefault()}
-            >
-              <input
-                type="email"
-                placeholder="Your email address"
-                aria-label="Your email address"
-                className="min-w-0 flex-1 rounded-[10px] border border-[#2A3446] bg-transparent px-4 py-[11px] text-[13px] text-white outline-none transition-colors placeholder:text-[#7C8798] focus-visible:border-[#4A5462]"
-              />
-              <button
-                type="submit"
-                aria-label="Subscribe"
-                className="text-ink-900 flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white transition-opacity hover:opacity-90"
-              >
-                <ArrowUpRight className="size-[13px]" strokeWidth={1.9} />
-              </button>
-            </form>
+            <SubscribeForm />
           </div>
 
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:border-l lg:border-[#1E2635] lg:pl-10">
