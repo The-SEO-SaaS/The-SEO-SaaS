@@ -2,6 +2,23 @@ generator client {
   provider = "prisma-client"
   output   = "../generated"
   moduleFormat = "esm"
+
+  // Without this, the generator emits extensionless relative specifiers
+  // (`import * as $Enums from "./enums"`) throughout the generated client.
+  //
+  // Bundlers resolve those, which is why the Next build has always been fine.
+  // Node's ESM resolver does not: apps/worker runs TypeScript sources directly
+  // via `node --experimental-strip-types`, and every relative import there needs
+  // a real extension. The worker died on its first database import with
+  // ERR_MODULE_NOT_FOUND pointing at `prisma/generated/client` — a path whose
+  // `.ts` file was sitting right there.
+  //
+  // "ts" rather than "js": the generated files really are TypeScript, and Node's
+  // type stripping wants the extension that exists on disk.
+  //
+  // Changing this requires a regenerate — `pnpm db:generate` — since it only
+  // affects emitted output.
+  importFileExtension = "ts"
 }
 
 datasource db {

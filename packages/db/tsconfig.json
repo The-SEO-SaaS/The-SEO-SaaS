@@ -5,6 +5,12 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "composite": true
+    "composite": true,
+    // Required alongside `allowImportingTsExtensions` in the base config:
+    // TypeScript refuses that flag unless the project emits nothing but
+    // declarations, since a `.ts` specifier would otherwise survive into emitted
+    // JavaScript and break at runtime. No cost here — this package has no build
+    // script and ships raw sources; consumers bundle or strip them.
+    "emitDeclarationOnly": true
   }
 }

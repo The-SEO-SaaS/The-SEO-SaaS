@@ -4,6 +4,13 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    // apps/worker executes TypeScript sources directly under Node's type
+    // stripping, which resolves relative specifiers literally — so those imports
+    // must carry a real `.ts` extension (see packages/db/src/index.ts). TypeScript
+    // rejects that by default; this permits it. Safe here because nothing in the
+    // repo emits JavaScript from these configs: the worker runs sources and the
+    // web app is bundled by Turbopack.
+    "allowImportingTsExtensions": true,
     "lib": ["ESNext"],
     "verbatimModuleSyntax": true,
     "strict": true,
