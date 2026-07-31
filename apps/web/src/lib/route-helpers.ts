@@ -38,10 +38,36 @@ export function fail(error: unknown) {
 
   const appError = toAppError(error);
 
-  // Unexpected failures are logged with their cause; the client only ever sees
-  // the sanitised message.
-  if (appError.code === "INTERNAL") {
-    console.error("[api] unhandled error:", appError.cause ?? appError);
+  /**
+   * Anything that isn't the user's fault gets logged with its cause.
+   *
+   * This used to log only `INTERNAL`, which meant every provider failure was
+   * invisible in production. A Dodo 401 becomes `UPSTREAM_ERROR`, a Serpex
+   * timeout becomes `TIMEOUT` — neither printed a line, so the server logs
+   * were silent while the UI showed a bare "dodo responded 401" with no way
+   * to find out what Dodo actually said. The upstream's own response body is
+   * already captured in `details`; it just never reached anywhere readable.
+   *
+   * 4xx codes stay unlogged on purpose — a validation failure or an expired
+   * session is normal traffic, and logging it is how you end up unable to
+   * find the real errors.
+   */
+  const isOurProblem =
+    appError.code === "INTERNAL" ||
+    appError.code === "UPSTREAM_ERROR" ||
+    appError.code === "TIMEOUT";
+
+  if (isOurProblem) {
+    console.error(
+      `[api] ${appError.code}: ${appError.message}`,
+      JSON.stringify({
+        details: appError.details ?? null,
+        cause:
+          appError.cause instanceof Error
+            ? { message: appError.cause.message, stack: appError.cause.stack }
+            : (appError.cause ?? null),
+      }),
+    );
   }
 
   return NextResponse.json(appError.toJSON(), {

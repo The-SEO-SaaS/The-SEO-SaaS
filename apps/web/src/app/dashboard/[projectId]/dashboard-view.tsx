@@ -166,14 +166,27 @@ function VerdictSection({ dashboard }: { dashboard: SiteDashboard }) {
     <FadeIn className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-10">
       <div className="min-w-0">
         <Eyebrow>Latest audit</Eyebrow>
-        <div className="mt-3.5 max-w-[46ch] space-y-2.5">
+        {/*
+          Full width, and the headline sentence scales with the viewport.
+
+          The earlier version capped this at 46ch and opened at 22px on a
+          phone: a three-sentence verdict then became a ten-line tower of
+          near-heading text that filled the screen before the score was
+          visible. The cap also wasted the right-hand third of a desktop
+          column, so the text wrapped far more than it needed to.
+
+          The step down to 17px on small screens is the important half — at
+          that size the opening sentence still reads as the headline it is,
+          without being the only thing on a 375px screen.
+        */}
+        <div className="mt-3.5 w-full space-y-2.5">
           {verdictParagraphs.map((paragraph, index) => (
             <p
               key={index}
               className={
                 index === 0
-                  ? "text-[22px] leading-[1.3] font-medium tracking-[-0.02em] text-pretty text-[#0B1220] sm:text-[27px]"
-                  : "text-[14.5px] leading-[1.6] text-[#5B6472]"
+                  ? "w-full text-[17px] leading-[1.35] font-medium tracking-[-0.015em] text-pretty text-[#0B1220] sm:text-[21px] sm:leading-[1.3] sm:tracking-[-0.02em] lg:text-[25px]"
+                  : "w-full text-[13.5px] leading-[1.65] text-[#5B6472] sm:text-[14.5px] sm:leading-[1.6]"
               }
             >
               <HighlightRivals text={paragraph} competitors={competitors} />

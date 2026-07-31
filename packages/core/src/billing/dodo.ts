@@ -27,11 +27,46 @@ function apiKey(): string {
   if (!env.DODO_API_KEY) {
     throw AppError.internal("Billing isn't configured. DODO_API_KEY is missing.");
   }
-  return env.DODO_API_KEY;
+  // Trimmed because the usual way this key arrives is a copy-paste into a
+  // hosting dashboard, and a trailing newline or space rides along invisibly.
+  // The header then carries it verbatim and Dodo rejects the whole request as
+  // a 401 — indistinguishable, from the outside, from a genuinely wrong key.
+  return env.DODO_API_KEY.trim();
 }
 
 function headers(): Record<string, string> {
   return { authorization: `Bearer ${apiKey()}` };
+}
+
+/**
+ * Turns Dodo's bare 401 into something that names the two things that
+ * actually cause it.
+ *
+ * A 401 means the key was rejected before Dodo looked at anything else — so
+ * it is never a product problem, however much it looks like one when all six
+ * products fail at once. It is either the wrong key, or the right key pointed
+ * at the wrong environment: test and live keys are not interchangeable across
+ * `test.dodopayments.com` and `live.dodopayments.com`.
+ */
+function explainAuthFailure(error: unknown): unknown {
+  if (error instanceof AppError && error.details?.status === 401) {
+    const key = env.DODO_API_KEY ?? "";
+    // Dodo's own error body is already captured by the http layer; it names
+    // the reason far better than we can infer it.
+    const body = typeof error.details.body === "string" ? error.details.body : "";
+
+    return AppError.internal(
+      `Dodo rejected the API key (401) at ${baseUrl()}. ` +
+        `DODO_ENVIRONMENT is "${env.DODO_ENVIRONMENT}", so this must be a ` +
+        `${env.DODO_ENVIRONMENT === "live_mode" ? "live" : "test"}-mode key from ` +
+        `Developer → API Keys with write access enabled. ` +
+        `Key: ${key.length} chars, starts "${key.trim().slice(0, 6)}…"` +
+        `${key.length !== key.trim().length ? ", HAS SURROUNDING WHITESPACE" : ""}.` +
+        (body ? ` Dodo said: ${body}` : ""),
+      { cause: error },
+    );
+  }
+  return error;
 }
 
 // --- Checkout --------------------------------------------------------------
@@ -65,7 +100,7 @@ export async function createCheckoutSession(
     provider: "dodo",
     headers: headers(),
     body: {
-      product_cart: [{ product_id: input.productId, quantity: 1 }],
+      product_cart: [{ product_id: input.productId.trim(), quantity: 1 }],
       // Attach to an existing customer when known, so Dodo doesn't create a
       // duplicate and the customer portal keeps one billing history.
       customer: input.customerId
@@ -85,6 +120,8 @@ export async function createCheckoutSession(
     // blind retry is worse than surfacing the failure.
     retries: 0,
     timeoutMs: 20_000,
+  }).catch((error: unknown) => {
+    throw explainAuthFailure(error);
   });
 
   if (!data.checkout_url) {
