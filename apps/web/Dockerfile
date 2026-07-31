@@ -95,6 +95,19 @@ COPY apps/web/ apps/web/
 # `COPY packages/db/` line has since overwritten. Cheap, and it settles which copy won.
 RUN pnpm --filter @theseosaas/db db:generate
 
+# Back to production before the build, and this line is load-bearing.
+#
+# NODE_ENV=development above exists only so pnpm doesn't treat the install as `--prod` and drop
+# devDependencies. Leaving it set through `next build` is a different thing entirely: Next warns
+# ("You are using a non-standard NODE_ENV value"), then builds against React's development
+# bundle while its own output still assumes production. That mismatch surfaced as a TypeError
+# prerendering /_global-error — a page this app doesn't even define, so the error pointed at
+# nothing in the codebase.
+#
+# Two separate concerns that happened to share one variable: install-time pruning and
+# build-time semantics. They get their own values.
+ENV NODE_ENV=production
+
 # `next build` writes .next/standalone as well (output: "standalone" in next.config.ts); the
 # runner ignores it, but leaving the setting alone keeps the option open.
 RUN pnpm --filter web build
