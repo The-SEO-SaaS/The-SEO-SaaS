@@ -52,6 +52,14 @@ export interface OnboardingState {
   }[];
   plan: PlanId | null;
   limits: { competitors: number; keywords: number } | null;
+  /**
+   * Whether there's audit data behind the competitor and keyword suggestions.
+   *
+   * "none" and "running" both mean those lists are empty for a reason the
+   * user should be told about, rather than looking like we found nothing on
+   * their site. The steps stay skippable in both cases.
+   */
+  audit: { status: "none" | "running" | "completed"; publicId: string | null };
 }
 
 interface RawCompetitor {
@@ -130,7 +138,8 @@ export async function getOnboardingState(
   const plan = user.subscription?.plan ?? null;
 
   if (!project) {
-    // No claimed audit — the user reached onboarding without one.
+    // No claimed audit — the user reached onboarding without one, typically
+    // by signing up straight from the pricing table.
     return {
       isComplete: Boolean(user.onboardedAt),
       currentStep: "site",
@@ -144,8 +153,20 @@ export async function getOnboardingState(
             keywords: PLANS[plan].limits.trackedKeywords,
           }
         : null,
+      audit: { status: "none", publicId: null },
     };
   }
+
+  // A crawl kicked off at the site step is still running, so it isn't in the
+  // COMPLETED set above. Queried separately because Prisma can't select the
+  // same relation twice under different filters.
+  const inFlightAudit = project.audits[0]
+    ? null
+    : await prisma.audit.findFirst({
+        where: { projectId: project.id, status: { in: ["QUEUED", "RUNNING"] } },
+        orderBy: { createdAt: "desc" },
+        select: { publicId: true },
+      });
 
   const raw = (project.audits[0]?.rawData ?? {}) as {
     competitors?: RawCompetitor[];
@@ -219,6 +240,11 @@ export async function getOnboardingState(
           keywords: PLANS[plan].limits.trackedKeywords,
         }
       : null,
+    audit: project.audits[0]
+      ? { status: "completed", publicId: null }
+      : inFlightAudit
+        ? { status: "running", publicId: inFlightAudit.publicId }
+        : { status: "none", publicId: null },
   };
 }
 
@@ -246,7 +272,7 @@ export const siteStepSchema = z.object({
 export async function saveSiteStep(
   userId: string,
   input: z.infer<typeof siteStepSchema>,
-): Promise<{ projectId: string }> {
+): Promise<{ projectId: string; auditPublicId: string | null }> {
   const parsed = siteStepSchema.parse(input);
   const domain = normalizeDomain(parsed.domain);
 
@@ -267,7 +293,36 @@ export async function saveSiteStep(
     select: { id: true },
   });
 
-  return { projectId: project.id };
+  /**
+   * Start a crawl if this site has never had one.
+   *
+   * The flow was built assuming everyone arrives from the free audit, so the
+   * competitors and keywords steps are confirmations of what we already
+   * found. Someone who signs up straight from the pricing table has no audit,
+   * so those screens had nothing to confirm — and keywords, which required at
+   * least one selection, became a dead end with no way forward.
+   *
+   * Kicking the audit off here rather than at completion means the crawl runs
+   * during the remaining steps instead of after them, so the data is usually
+   * there by the time they reach the dashboard.
+   */
+  const existingAudit = await prisma.audit.findFirst({
+    where: {
+      projectId: project.id,
+      status: { in: ["COMPLETED", "QUEUED", "RUNNING"] },
+    },
+    select: { publicId: true },
+  });
+
+  if (existingAudit) return { projectId: project.id, auditPublicId: null };
+
+  // Never let a queue failure block setup — they can re-run from Audits.
+  const started = await rerunAudit(userId, project.id).catch((error: unknown) => {
+    console.error("[onboarding] couldn't start the first audit:", error);
+    return null;
+  });
+
+  return { projectId: project.id, auditPublicId: started?.publicId ?? null };
 }
 
 // --- Step 2: competitors ---------------------------------------------------

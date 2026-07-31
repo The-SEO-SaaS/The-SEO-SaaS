@@ -255,6 +255,12 @@ export interface OnboardingState {
   keywords: OnboardingKeyword[];
   plan: "STARTER" | "GROWTH" | "SCALE" | null;
   limits: { competitors: number; keywords: number } | null;
+  /**
+   * Whether audit data exists behind the competitor and keyword suggestions.
+   * "running" means a crawl started at the site step and those lists will
+   * fill in shortly; both non-"completed" states make those steps skippable.
+   */
+  audit: { status: "none" | "running" | "completed"; publicId: string | null };
 }
 
 export const onboardingApi = {
@@ -270,7 +276,11 @@ export const onboardingApi = {
     name?: string;
     siteType: SiteType;
     platform?: SitePlatform;
-  }) => http.post<{ projectId: string }>("/onboarding/site", input),
+  }) =>
+    http.post<{ projectId: string; auditPublicId: string | null }>(
+      "/onboarding/site",
+      input,
+    ),
 
   saveCompetitors: (input: { projectId: string; domains: string[] }) =>
     http.post<{ saved: number }>("/onboarding/competitors", input),

@@ -144,7 +144,14 @@ export function KeywordsStep({
 
       {visible.length === 0 ? (
         <div className="border-line text-ink-400 rounded-xl border border-dashed px-4 py-8 text-center text-sm">
-          {query ? `Nothing matches "${query}".` : "No keywords in this view."}
+          {query
+            ? `Nothing matches "${query}".`
+            : keywords.length === 0
+              ? // No audit yet — the suggestions come from the crawl, which is
+                // still running. Saying so beats "no keywords in this view",
+                // which reads like we looked and found nothing worth tracking.
+                "Your audit is still crawling — keyword suggestions land when it finishes. Skip this step and pick them up on the Keywords page."
+              : "No keywords in this view."}
         </div>
       ) : (
         <div>

@@ -99,6 +99,18 @@ export function OnboardingFlow() {
   const competitorLimit = state.limits?.competitors ?? 3;
   const keywordLimit = state.limits?.keywords ?? 100;
 
+  /**
+   * Someone who signed up from the pricing table has no audit, so the
+   * competitor and keyword suggestions are empty through no fault of theirs.
+   * A crawl starts at the site step, but it takes minutes — longer than the
+   * rest of setup — so these two screens have to work with nothing in them.
+   *
+   * They become skippable rather than blocking. Keywords in particular used
+   * to require at least one selection, which with an empty list was a dead
+   * end: nothing to select, and no way forward. The plan step stays required.
+   */
+  const isAwaitingAudit = state.audit.status !== "completed";
+
   // --- Step 1: site --------------------------------------------------------
   if (flow.step === "site") {
     return (
@@ -143,8 +155,12 @@ export function OnboardingFlow() {
       <StepShell
         step="competitors"
         eyebrow="COMPETITORS"
-        title="These already take your terms"
-        subtitle="Found during your audit by matching the sites that rank above you. Untick anyone who isn't really a competitor."
+        title={isAwaitingAudit ? "Who are you up against?" : "These already take your terms"}
+        subtitle={
+          isAwaitingAudit
+            ? "We're crawling your site now, so we don't have suggestions yet. Add any rivals you already know of, or skip — we'll fill these in from the audit."
+            : "Found during your audit by matching the sites that rank above you. Untick anyone who isn't really a competitor."
+        }
         help={{
           title: `${flow.selectedCompetitors.size} of ${competitorLimit} slots used`,
           body: "Starter tracks three competitors. Growth raises it to ten.",
@@ -153,6 +169,7 @@ export function OnboardingFlow() {
         error={flow.competitorsError}
         isSubmitting={flow.isSavingCompetitors}
         onBack={flow.back}
+        continueLabel={flow.selectedCompetitors.size === 0 ? "Skip for now" : "Continue"}
         continueDisabled={!projectId}
         onContinue={async () => {
           if (!projectId) return;
@@ -186,16 +203,27 @@ export function OnboardingFlow() {
         step="keywords"
         eyebrow="KEYWORDS"
         title="What should we watch every week?"
-        subtitle="Pulled from pages you already rank for, plus gaps your competitors hold. We've pre-selected the ones with the clearest upside."
+        subtitle={
+          isAwaitingAudit
+            ? "These come from your audit, which is still crawling. Skip this and we'll suggest keywords on the Keywords page as soon as it lands."
+            : "Pulled from pages you already rank for, plus gaps your competitors hold. We've pre-selected the ones with the clearest upside."
+        }
         help={{
           title: `${flow.selectedKeywords.size} selected of ${keywordLimit}`,
           body: "Start narrow. You can add more from the Keywords page whenever you like.",
         }}
-        footerNote={`${flow.selectedKeywords.size} keywords selected`}
+        footerNote={
+          flow.selectedKeywords.size === 0
+            ? "You can add these any time from the Keywords page"
+            : `${flow.selectedKeywords.size} keywords selected`
+        }
         error={flow.keywordsError}
         isSubmitting={flow.isSavingKeywords}
         onBack={flow.back}
-        continueDisabled={!projectId || flow.selectedKeywords.size === 0}
+        continueLabel={flow.selectedKeywords.size === 0 ? "Skip for now" : "Continue"}
+        // Deliberately not requiring a selection. With no audit there is
+        // nothing to select, and this was where those users got stuck.
+        continueDisabled={!projectId}
         onContinue={async () => {
           if (!projectId) return;
           const result = await flow.saveKeywords({

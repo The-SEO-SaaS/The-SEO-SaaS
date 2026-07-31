@@ -57,9 +57,8 @@ export async function createCheckout(
   const returnPath = parsedReturnPath ?? "/onboarding/complete";
   const cancelPath = parsedCancelPath ?? "/onboarding";
 
-  const { checkoutUrl } = await createCheckoutSession({
+  const session = {
     productId,
-    customerId: existing?.dodoCustomerId ?? null,
     email,
     name,
     returnUrl: new URL(returnPath, env.APP_URL).toString(),
@@ -68,9 +67,54 @@ export async function createCheckout(
     // reliable way to resolve a Dodo event back to our own user, since email
     // can change and Dodo's customer_id doesn't exist until checkout completes.
     metadata: { userId },
-  });
+  };
 
-  return { checkoutUrl };
+  /**
+   * A stored customer must never be able to block checkout.
+   *
+   * Dodo's test and live modes are separate universes: a `cus_…` minted in
+   * test mode does not exist in live mode. Any account that subscribed while
+   * the app pointed at test — which is every account created during
+   * development — carries a `dodoCustomerId` that live mode 404s on. Because
+   * the ID is per-user rather than per-plan, this presents as *every* plan
+   * failing identically, which looks exactly like a bad product catalogue and
+   * is not.
+   *
+   * The same failure occurs whenever a customer is deleted in Dodo's
+   * dashboard, so this isn't only a migration concern.
+   *
+   * On a 404 we drop the stored ID and retry by email, which makes Dodo mint
+   * a fresh customer. The stale row is cleared so the next checkout doesn't
+   * pay the extra round trip. Only 404 is swallowed — anything else is a real
+   * failure and still throws.
+   */
+  if (!existing?.dodoCustomerId) {
+    const { checkoutUrl } = await createCheckoutSession({ ...session, customerId: null });
+    return { checkoutUrl };
+  }
+
+  try {
+    const { checkoutUrl } = await createCheckoutSession({
+      ...session,
+      customerId: existing.dodoCustomerId,
+    });
+    return { checkoutUrl };
+  } catch (error) {
+    const isMissingCustomer = error instanceof AppError && error.details?.status === 404;
+    if (!isMissingCustomer) throw error;
+
+    console.warn(
+      `[billing] Dodo customer ${existing.dodoCustomerId} not found in ` +
+        `${env.DODO_ENVIRONMENT}; clearing it and retrying checkout by email.`,
+    );
+
+    await prisma.subscription
+      .update({ where: { userId }, data: { dodoCustomerId: null } })
+      .catch(() => {});
+
+    const { checkoutUrl } = await createCheckoutSession({ ...session, customerId: null });
+    return { checkoutUrl };
+  }
 }
 
 // --- Portal --------------------------------------------------------------
