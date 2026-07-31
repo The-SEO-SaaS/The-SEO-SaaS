@@ -94,7 +94,11 @@ export const env = createEnv({
 
     // --- AI: OpenRouter ----------------------------------------------------
     OPENROUTER_API_KEY: z.string().min(1),
-    OPENROUTER_MODEL: z.string().min(1).default("openai/gpt-4.1-mini"),
+    // OPENROUTER_MODEL removed deliberately — the model is pinned in code, in
+    // `packages/core/src/ai/openrouter.ts`. Every prompt and the brand-voice
+    // rules are written against one model's behaviour, so swapping it from a
+    // hosting dashboard changed output quality with nothing in the diff to
+    // explain why. One fewer env var to keep in sync across apps, too.
 
     // --- Payments: Dodo ----------------------------------------------------
     DODO_API_KEY: z.string().min(1).optional(),

@@ -16,6 +16,26 @@ import { request } from "../http/index.ts";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+/**
+ * The model, fixed in code rather than read from the environment.
+ *
+ * Every generation this product ships — the audit verdict, the findings, the
+ * brief, the article — is tuned against one model's behaviour. The brand
+ * voice in `ai/voice.ts` is a set of rules written for how *this* model
+ * follows instructions, and `generateObject` depends on it honouring a JSON
+ * schema reliably. A model swapped in via an env var would silently change
+ * all of that with no code review and no way to tell from a diff why the
+ * output drifted.
+ *
+ * Pinned to `-5` rather than `claude-sonnet-latest`: an alias that
+ * auto-follows the newest release would re-introduce exactly the silent
+ * change this constant exists to prevent.
+ *
+ * Callers can still override per-call via `options.model`, which is how a
+ * cheaper model would be used for a genuinely trivial task.
+ */
+export const MODEL = "anthropic/claude-sonnet-5";
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -81,7 +101,7 @@ export async function generateText(options: GenerateOptions): Promise<GenerateTe
     provider: "openrouter",
     headers: headers(),
     body: {
-      model: options.model ?? env.OPENROUTER_MODEL,
+      model: options.model ?? MODEL,
       messages: options.messages,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 4000,
@@ -137,7 +157,7 @@ export async function generateObject<T>(
       provider: "openrouter",
       headers: headers(),
       body: {
-        model: options.model ?? env.OPENROUTER_MODEL,
+        model: options.model ?? MODEL,
         messages,
         temperature: options.temperature ?? 0.4,
         max_tokens: options.maxTokens ?? 4000,
