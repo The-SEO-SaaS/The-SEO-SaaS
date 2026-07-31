@@ -14,10 +14,12 @@ FROM node:22-slim AS builder
 
 WORKDIR /app
 
-# openssl + ca-certificates: Prisma links against openssl, and TLS to a managed Postgres
-# (sslmode=require) needs the CA bundle. Neither ships in -slim.
+# ca-certificates only — no openssl. Prisma 7.9 here runs the WASM query compiler behind
+# @prisma/adapter-pg, so there's no Rust engine to link against; node-postgres handles the
+# connection and Node's own bundled OpenSSL handles TLS. The trust store is still needed for
+# `sslmode=require` against a managed Postgres.
 RUN apt-get update -y \
-  && apt-get install -y openssl ca-certificates \
+  && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
@@ -74,7 +76,7 @@ FROM node:22-slim AS runner
 WORKDIR /app
 
 RUN apt-get update -y \
-  && apt-get install -y openssl ca-certificates \
+  && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
