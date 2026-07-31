@@ -652,14 +652,3 @@ export const competitorsApi = {
   remove: (projectId: string, competitorId: string) =>
     http.delete<{ ok: true }>(`/sites/${projectId}/competitors/${competitorId}`),
 };
-
-export const contentApi = {
-  generate: (opportunityId: string) =>
-    http.post<{ contentId: string; jobId: string }>("/content/generate", { opportunityId }),
-
-  job: (jobId: string, signal?: AbortSignal) =>
-    http.get<{ status: string; progress: number; progressLabel: string | null }>(
-      `/jobs/${jobId}`,
-      { signal },
-    ),
-};

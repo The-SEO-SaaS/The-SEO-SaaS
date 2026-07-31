@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@theseosaas/ui/components/button";
 import { Compass } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +12,14 @@ import { StatusScreen } from "@/components/layout/status-screen";
  * A meaningful share of these will be someone opening an expired or mistyped
  * audit link, so the primary action is running a new audit rather than a bare
  * "go home" — it turns a dead end back into the funnel.
+ *
+ * Client component, not because it needs interactivity, but because it hands
+ * `Compass` — a component reference, not JSX — to StatusScreen, which is
+ * itself a client component. A function reference can't cross the
+ * server→client boundary unserialized (React: "Functions cannot be passed
+ * directly to Client Components"), and Next prerenders the global /_not-found
+ * route at build time, so this broke the build rather than just erroring at
+ * runtime. Same reasoning error.tsx already follows.
  */
 export default function NotFound() {
   return (
