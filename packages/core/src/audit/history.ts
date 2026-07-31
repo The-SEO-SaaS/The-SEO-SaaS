@@ -32,6 +32,9 @@ export interface AuditHistoryEntry {
   pagesCrawled: number;
   summary: string | null;
   createdAt: string;
+  /** When the worker picked it up. The run header's elapsed time measures
+   *  from here, not from `createdAt`, so queue wait isn't reported as work. */
+  startedAt: string | null;
   completedAt: string | null;
 }
 
@@ -74,6 +77,7 @@ export async function getAuditHistory(
       pagesCrawled: true,
       summary: true,
       createdAt: true,
+      startedAt: true,
       completedAt: true,
     },
   });
@@ -105,6 +109,7 @@ export async function getAuditHistory(
       // On failure this field carries the reason rather than a verdict.
       summary: row.summary,
       createdAt: row.createdAt.toISOString(),
+      startedAt: row.startedAt?.toISOString() ?? null,
       completedAt: row.completedAt?.toISOString() ?? null,
     };
   });

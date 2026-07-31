@@ -1,11 +1,10 @@
 "use client";
 
 import { Button } from "@theseosaas/ui/components/button";
-import { Card, CardContent } from "@theseosaas/ui/components/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@theseosaas/ui/components/empty";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { Input } from "@theseosaas/ui/components/input";
-import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
+import { FadeIn } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
 import { AlertTriangle, ExternalLink, Plus, Search, Trash2, X } from "lucide-react";
 import Link from "next/link";
@@ -18,16 +17,26 @@ import { useSites } from "@/hooks/use-sites";
 import type { CompetitorStanding, MatrixRow } from "@/lib/api";
 
 /**
- * Competitors: head-to-head standings plus a shared-keyword matrix.
+ * Competitors: the design's full-bleed rival strip over a shared-keyword
+ * matrix.
  *
  * The matrix is real data at no extra cost — the daily rank sweep already
  * fetches the whole SERP for each tracked keyword, so every rival's position
  * is in that same response.
  *
- * The design's "what they shipped this month" change log is deliberately
- * absent: it needs recurring crawls of each rival's site, which is its own
- * pipeline and its own per-rival cost. Deferred rather than stubbed with
- * plausible-looking rows.
+ * Two things the design shows that aren't here, both because there's nothing
+ * true to put in them (HANDOVER.md, "Missing data the design assumes"):
+ *
+ *  - Each rival's 0–100 SCORE. We never crawl competitor sites. The cell keeps
+ *    its 32px figure slot but fills it with how many of your shared terms they
+ *    currently beat you on, which the rank sweep does measure.
+ *  - "What they shipped this month". That needs recurring crawls of each
+ *    rival's site — its own pipeline and its own per-rival cost. Deferred
+ *    rather than stubbed with plausible-looking rows.
+ *
+ * Responsive: the design is desktop-only. The rival strip goes 1-up then 2-up
+ * before reaching its 4 columns, and the matrix scrolls horizontally below
+ * `sm` rather than crushing a column per rival onto a phone.
  */
 export function CompetitorsView({ projectId }: { projectId: string }) {
   const flow = useCompetitors(projectId);
@@ -99,68 +108,74 @@ export function CompetitorsView({ projectId }: { projectId: string }) {
         }
       />
 
-      <main className="flex flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
-        {showAdd ? (
-          <FadeIn className="border-line bg-surface-sunken space-y-3 rounded-xl border p-4">
-            <label htmlFor="competitor-domain" className="text-ink-700 block text-sm font-medium">
-              Competitor domain
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="competitor-domain"
-                autoFocus
-                value={domain}
-                onChange={(event) => setDomain(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") void submit();
-                }}
-                placeholder="rival.com"
-                spellCheck={false}
-                inputMode="url"
-                className="sm:max-w-xs"
-              />
-              <Button onClick={submit} disabled={!domain.trim() || flow.isAdding}>
-                {flow.isAdding ? "Adding…" : "Add"}
-              </Button>
+      {showAdd ? (
+        <FadeIn className="space-y-3 border-b border-[#EDEFF3] bg-[#FAFAFB] px-4 py-4 sm:px-6 lg:px-9">
+          <label
+            htmlFor="competitor-domain"
+            className="block text-[13px] font-medium text-[#3F4854]"
+          >
+            Competitor domain
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="competitor-domain"
+              autoFocus
+              value={domain}
+              onChange={(event) => setDomain(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void submit();
+              }}
+              placeholder="rival.com"
+              spellCheck={false}
+              inputMode="url"
+              className="sm:max-w-xs"
+            />
+            <Button onClick={submit} disabled={!domain.trim() || flow.isAdding}>
+              {flow.isAdding ? "Adding…" : "Add"}
+            </Button>
+          </div>
+
+          {flow.addError ? (
+            <div className="border-critical/20 bg-critical/5 text-critical-strong rounded-lg border px-3 py-2 text-[13px]">
+              {flow.addError}
             </div>
+          ) : null}
 
-            {flow.addError ? (
-              <div className="border-critical/20 bg-critical/5 text-critical-strong rounded-lg border px-3 py-2 text-sm">
-                {flow.addError}
-              </div>
-            ) : null}
+          <p className="text-[11.5px] leading-relaxed text-[#6B7480]">
+            Their positions come from the keyword checks you already run, so they&apos;ll fill in
+            on tomorrow&apos;s sweep — no extra cost.
+          </p>
+        </FadeIn>
+      ) : null}
 
-            <p className="text-ink-300 text-xs leading-relaxed">
-              Their positions come from the keyword checks you already run, so they&apos;ll fill
-              in on tomorrow&apos;s sweep — no extra cost.
-            </p>
-          </FadeIn>
-        ) : null}
-
-        {competitors.length === 0 ? (
-          <Empty className="border-line rounded-2xl border">
+      {competitors.length === 0 ? (
+        <main className="flex flex-1 flex-col px-4 py-8 sm:px-6 lg:px-9">
+          <Empty className="rounded-2xl border border-[#E2E6EC]">
             <EmptyTitle>No competitors tracked</EmptyTitle>
             <EmptyDescription>
               Add the rivals you keep losing traffic to and we&apos;ll compare positions on every
               keyword you track.
             </EmptyDescription>
           </Empty>
-        ) : (
-          <>
-            <Stagger className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" whenInView={false}>
-              {competitors.map((competitor) => (
-                <StaggerItem key={competitor.id} className="h-full">
-                  <RivalCard
-                    competitor={competitor}
-                    onRemove={() => flow.removeCompetitor(competitor.id)}
-                    isRemoving={flow.isRemoving}
-                  />
-                </StaggerItem>
-              ))}
-            </Stagger>
+        </main>
+      ) : (
+        <>
+          {/* Full-bleed hairline strip — 1px gaps over #EDEFF3, exactly as the
+              figures strip on the dashboard. */}
+          <div className="grid gap-px border-b border-[#EDEFF3] bg-[#EDEFF3] sm:grid-cols-2 xl:grid-cols-4">
+            {competitors.map((competitor) => (
+              <RivalCell
+                key={competitor.id}
+                competitor={competitor}
+                onRemove={() => flow.removeCompetitor(competitor.id)}
+                isRemoving={flow.isRemoving}
+              />
+            ))}
+          </div>
 
+          <main className="flex flex-1 flex-col px-4 pt-6 pb-10 sm:px-6 lg:px-9 lg:pt-[30px] lg:pb-14">
             {flow.removeError ? (
-              <div className="border-critical/20 bg-critical/5 text-critical-strong rounded-lg border px-3.5 py-2.5 text-sm">
+              <div className="border-critical/20 bg-critical/5 text-critical-strong mb-6 rounded-lg border px-3.5 py-2.5 text-[13px]">
                 {flow.removeError}
               </div>
             ) : null}
@@ -171,25 +186,29 @@ export function CompetitorsView({ projectId }: { projectId: string }) {
               isAwaitingFirstCheck={isAwaitingFirstCheck}
               projectId={projectId}
             />
-          </>
-        )}
 
-        {!quota.canAdd && competitors.length > 0 ? (
-          <div className="border-opportunity-line bg-opportunity-surface flex flex-col gap-3 rounded-xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-opportunity-strong text-sm leading-relaxed">
-              You&apos;re tracking all {quota.limit} competitors your plan allows for this site.
-            </p>
-            <Button size="sm" variant="outline" render={<Link href="/dashboard/settings" />}>
-              See plans
-            </Button>
-          </div>
-        ) : null}
-      </main>
+            {!quota.canAdd ? (
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 rounded-xl border border-[#FCD9B6] bg-[#FFFBF6] px-[18px] py-4">
+                <p className="text-[13px] leading-[1.55] text-[#7C3D12]">
+                  You&apos;re tracking all {quota.limit} competitors your plan allows for this
+                  site.
+                </p>
+                <Link
+                  href="/dashboard/settings"
+                  className="text-[13px] font-medium whitespace-nowrap text-[#EA580C]"
+                >
+                  See plans
+                </Link>
+              </div>
+            ) : null}
+          </main>
+        </>
+      )}
     </>
   );
 }
 
-function RivalCard({
+function RivalCell({
   competitor,
   onRemove,
   isRemoving,
@@ -199,87 +218,94 @@ function RivalCard({
   isRemoving: boolean;
 }) {
   const total = competitor.beatingUsOn + competitor.losingToUsOn;
-  const aheadPct = total > 0 ? (competitor.beatingUsOn / total) * 100 : 0;
+  const isThreat = total > 0 && competitor.beatingUsOn > competitor.losingToUsOn;
 
   return (
-    <Card variant="panel" className="h-full">
-      <CardContent className="flex h-full flex-col gap-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-ink-900 truncate text-base font-semibold">
-              {competitor.name ?? competitor.domain}
-            </div>
-            <div className="text-ink-300 truncate text-xs">{competitor.domain}</div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onRemove}
-            disabled={isRemoving}
-            aria-label={`Remove ${competitor.domain}`}
-          >
-            <Trash2 />
-          </Button>
-        </div>
-
+    <div className="group min-w-0 bg-white px-4 py-5 sm:px-[26px] sm:py-6">
+      <div className="flex items-center gap-2">
+        <span
+          className="h-[7px] w-[7px] shrink-0 rounded-full"
+          style={{ background: isThreat ? "#EA580C" : "#16A34A" }}
+        />
+        <span className="truncate text-[13px] font-semibold text-[#0B1220]">
+          {competitor.domain}
+        </span>
         {competitor.isPending ? (
-          <p className="text-ink-300 text-sm leading-relaxed">
-            Waiting on the first rank check — positions appear after tonight&apos;s sweep.
-          </p>
+          <span className="text-[11px] whitespace-nowrap text-[#6B7480]">pending</span>
         ) : (
-          <>
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-ink-900 text-3xl font-semibold tabular-nums">
-                {competitor.beatingUsOn}
-              </span>
-              <span className="text-ink-400 text-sm">
-                {competitor.beatingUsOn === 1 ? "term ahead of you" : "terms ahead of you"}
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="bg-surface-sunken h-[3px] overflow-hidden rounded-full">
-                <div
-                  className={cn("h-full", aheadPct > 50 ? "bg-critical" : "bg-success")}
-                  style={{ width: `${aheadPct}%` }}
-                />
-              </div>
-              <p className="text-ink-300 text-xs">
-                You lead on {competitor.losingToUsOn} of {total} shared terms
-              </p>
-            </div>
-
-            {competitor.trend.length >= 2 ? (
-              <RankSparkline positions={competitor.trend} width={140} height={26} />
-            ) : null}
-
-            {competitor.averagePosition !== null ? (
-              <p className="text-ink-400 text-sm leading-relaxed">
-                Average position {competitor.averagePosition}
-                {competitor.bestPosition !== null ? `, best #${competitor.bestPosition}` : null}.
-              </p>
-            ) : null}
-          </>
+          <span className="text-[11px] whitespace-nowrap text-[#6B7480]">
+            {isThreat ? "outranks you" : "behind you"}
+          </span>
         )}
 
-        {competitor.notes ? (
-          <p className="text-ink-400 text-sm leading-relaxed">{competitor.notes}</p>
-        ) : null}
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={isRemoving}
+          aria-label={`Remove ${competitor.domain}`}
+          className="ml-auto text-[#9AA2AE] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-40"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+      </div>
 
-        {competitor.bestPage ? (
-          <a
-            href={competitor.bestPage.url}
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-            className="text-ink-500 mt-auto flex items-start gap-1.5 text-sm"
+      {competitor.isPending ? (
+        <p className="mt-3.5 text-[12px] leading-[1.55] text-[#5B6472]">
+          Waiting on the first rank check — positions appear after tonight&apos;s sweep.
+        </p>
+      ) : (
+        <>
+          {/* The design's 32px figure is a whole-site score. We don't crawl
+              rival sites, so this is their visibility across *your* tracked
+              terms — coverage weighted by rank quality, from the sweep we
+              already run. Labelled "visibility", not "score". */}
+          <div
+            className="mt-3.5 flex items-baseline gap-2"
+            title="How visible they are across your tracked keywords, weighted by position. Not a score for their whole site."
           >
-            <span className="line-clamp-2">{competitor.bestPage.title}</span>
-            <ExternalLink className="mt-0.5 size-3 shrink-0" />
-          </a>
-        ) : null}
-      </CardContent>
-    </Card>
+            <span className="text-[32px] leading-none font-medium tracking-[-0.03em] text-[#0B1220]">
+              {competitor.visibilityScore ?? "—"}
+            </span>
+            <span className="text-[12.5px] text-[#6B7480]">visibility</span>
+          </div>
+
+          <div className="mt-1.5 text-[12px] text-[#6B7480]">
+            Ahead of you on {competitor.beatingUsOn} of {total} shared term
+            {total === 1 ? "" : "s"}
+          </div>
+
+          {competitor.trend.length >= 2 ? (
+            <RankSparkline
+              positions={competitor.trend}
+              width={120}
+              height={26}
+              className="mt-3.5 w-full max-w-[170px]"
+            />
+          ) : null}
+
+          <p className="mt-3.5 text-[12px] leading-[1.55] text-[#5B6472]">
+            {competitor.notes ??
+              (competitor.averagePosition !== null
+                ? `Average position ${competitor.averagePosition}${
+                    competitor.bestPosition !== null ? `, best #${competitor.bestPosition}` : ""
+                  }.`
+                : "No positions recorded yet.")}
+          </p>
+
+          {competitor.bestPage ? (
+            <a
+              href={competitor.bestPage.url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="mt-2.5 flex items-start gap-1.5 text-[12px] text-[#6B7480]"
+            >
+              <span className="line-clamp-2">{competitor.bestPage.title}</span>
+              <ExternalLink className="mt-0.5 size-3 shrink-0" />
+            </a>
+          ) : null}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -294,11 +320,17 @@ function MatrixSection({
   isAwaitingFirstCheck: boolean;
   projectId: string;
 }) {
+  const heading = (
+    <div className="text-[11px] font-semibold tracking-[0.1em] text-[#6B7480] uppercase">
+      Shared keywords · who owns them
+    </div>
+  );
+
   if (matrix.length === 0) {
     return (
       <section>
-        <div className="eyebrow text-ink-300">Shared keywords</div>
-        <Empty className="border-line mt-4 rounded-2xl border">
+        {heading}
+        <Empty className="mt-4 rounded-2xl border border-[#E2E6EC]">
           <EmptyTitle>No tracked keywords yet</EmptyTitle>
           <EmptyDescription>
             The comparison is built from the keywords you track. Add some to see who holds each
@@ -319,8 +351,8 @@ function MatrixSection({
   if (isAwaitingFirstCheck) {
     return (
       <section>
-        <div className="eyebrow text-ink-300">Shared keywords</div>
-        <Empty className="border-line mt-4 rounded-2xl border">
+        {heading}
+        <Empty className="mt-4 rounded-2xl border border-[#E2E6EC]">
           <EmptyTitle>First rank check is still pending</EmptyTitle>
           <EmptyDescription>
             We check every tracked keyword daily. Once the first sweep runs, this fills in with
@@ -331,25 +363,36 @@ function MatrixSection({
     );
   }
 
+  // minmax(0,1fr) then 78px per column, per the design.
+  const columns = `minmax(0,1fr) repeat(${competitors.length + 1}, 78px)`;
+
   return (
     <section>
       <div className="flex items-baseline justify-between gap-4">
-        <div className="eyebrow text-ink-300">Shared keywords · who owns them</div>
-        <span className="text-ink-300 text-xs">Shaded cell marks the best position</span>
+        {heading}
+        <span className="text-[12.5px] text-[#6B7480]">Shaded cell marks the best position</span>
       </div>
 
-      {/* Horizontal scroll below xl: a column per rival plus the term can't
+      {/* Horizontal scroll below sm: a column per rival plus the term can't
           compress onto a phone without becoming unreadable. */}
-      <div className="mt-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div className="min-w-[560px]">
           <div
-            className="border-line-strong text-ink-400 grid gap-3 border-b pb-2.5"
-            style={{ gridTemplateColumns: `minmax(0,1fr) repeat(${competitors.length + 1}, 72px)` }}
+            className="grid gap-3.5 border-b border-[#DFE3EA] px-1 pb-2.5"
+            style={{ gridTemplateColumns: columns }}
           >
-            <div className="eyebrow">Keyword</div>
-            <div className="eyebrow text-ink-900 text-center">You</div>
+            <div className="text-[11px] font-semibold tracking-[0.08em] text-[#6B7480] uppercase">
+              Keyword
+            </div>
+            <div className="text-center text-[11px] font-semibold tracking-[0.08em] text-[#0B1220] uppercase">
+              You
+            </div>
             {competitors.map((competitor) => (
-              <div key={competitor.id} className="eyebrow truncate text-center">
+              <div
+                key={competitor.id}
+                className="truncate text-center text-[11px] font-semibold tracking-[0.08em] text-[#6B7480] uppercase"
+                title={competitor.domain}
+              >
                 {competitor.domain.split(".")[0]}
               </div>
             ))}
@@ -358,12 +401,10 @@ function MatrixSection({
           {matrix.map((row) => (
             <div
               key={row.keywordId}
-              className="border-line-soft grid items-center gap-3 border-b py-2.5"
-              style={{
-                gridTemplateColumns: `minmax(0,1fr) repeat(${competitors.length + 1}, 72px)`,
-              }}
+              className="grid items-center gap-3.5 border-b border-[#F3F5F8] px-1 py-3"
+              style={{ gridTemplateColumns: columns }}
             >
-              <div className="text-ink-900 truncate text-sm font-medium">{row.term}</div>
+              <div className="truncate text-[13.5px] font-medium text-[#0B1220]">{row.term}</div>
 
               <MatrixCell position={row.own} isLeader={row.leader === "own"} isOwn />
 
@@ -394,11 +435,11 @@ function MatrixCell({
   return (
     <div
       className={cn(
-        "rounded-md py-1.5 text-center text-sm tabular-nums",
-        isLeader && isOwn && "bg-success-surface text-success-strong font-semibold",
-        isLeader && !isOwn && "bg-opportunity-surface text-opportunity font-semibold",
-        !isLeader && position !== null && "text-ink-500",
-        position === null && "text-ink-300",
+        "rounded-[6px] py-1.5 text-center text-[13.5px] tabular-nums",
+        isLeader && isOwn && "bg-[#F0FDF4] font-semibold text-[#15803D]",
+        isLeader && !isOwn && "bg-[#FFF6EE] font-semibold text-[#EA580C]",
+        !isLeader && position !== null && "text-[#3F4854]",
+        position === null && "text-[#9AA2AE]",
       )}
     >
       {position ?? "—"}

@@ -41,10 +41,23 @@ export interface PostSummary {
   createdAt: string;
 }
 
+export interface HistoryEntry {
+  id: string;
+  title: string;
+  /** "Brief" or "Blog post" — the design's type column. */
+  type: string;
+  status: PostSummary["status"];
+  createdAt: string;
+  /** Only set for things that can be opened, i.e. finished posts. */
+  href: string | null;
+}
+
 export interface ContentLibrary {
   site: { id: string; domain: string };
   briefs: BriefSummary[];
   posts: PostSummary[];
+  /** Everything ever generated for this site, newest first. */
+  history: HistoryEntry[];
   /** Opportunities with no brief yet — what "New brief" draws from. */
   availableOpportunities: { id: string; title: string; rationale: string; keywords: string[] }[];
   quota: { used: number; limit: number; remaining: number; periodEnd: string };
@@ -154,10 +167,29 @@ export async function getContentLibrary(
     rows.filter((row) => row.type === "BLOG_BRIEF" && row.opportunityId).map((row) => row.opportunityId!),
   );
 
+  // One flat log across both types, newest first. Built from the rows we've
+  // already loaded rather than a second query — the design's history section
+  // is a different view of the same data, not more of it.
+  const history: HistoryEntry[] = rows
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      type: row.type === "BLOG_BRIEF" ? "Brief" : "Blog post",
+      status: row.status,
+      createdAt: row.createdAt.toISOString(),
+      href:
+        row.type === "BLOG_POST" &&
+        (row.status === "GENERATED" || row.status === "PUBLISHED" || row.status === "ARCHIVED")
+          ? `/dashboard/${projectId}/content/${row.id}`
+          : null,
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
   return {
     site: project,
     briefs,
     posts,
+    history,
     availableOpportunities: opportunities.filter((item) => !briefedOpportunities.has(item.id)),
     quota: {
       used: quota.used,

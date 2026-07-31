@@ -10,6 +10,7 @@ import {
   generateOpportunities,
   totalUsage,
 } from "./analysis.ts";
+import { categoryFor, scoreCategories } from "./categories.ts";
 import { discoverCompetitors, findBestBlogPosts } from "./competitors.ts";
 import { crawlSite } from "./crawl.ts";
 import { calculateScore } from "./score.ts";
@@ -178,6 +179,13 @@ export async function runAuditPipeline({
             band: score.band,
             counts: technical.counts,
             healthy: technical.healthy,
+            // The design's four category figures. Computed from this crawl —
+            // see audit/categories.ts for what Speed does and doesn't measure.
+            categories: scoreCategories(
+              technical.issues,
+              crawl.crawledCount,
+              crawl.avgResponseTimeMs,
+            ),
             crawl: {
               finalUrl: crawl.finalUrl,
               title: crawl.homepage.title,
@@ -195,6 +203,7 @@ export async function runAuditPipeline({
           data: issues.map((issue) => ({
             auditId,
             severity: issue.severity,
+            category: categoryFor(issue.code),
             title: issue.title,
             whyItMatters: issue.whyItMatters,
             howToFix: issue.howToFix,

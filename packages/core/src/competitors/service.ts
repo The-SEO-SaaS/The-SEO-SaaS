@@ -39,6 +39,28 @@ export interface CompetitorStanding {
   /** Their strongest content page, from the audit. */
   bestPage: { url: string; title: string; whyItMatters: string | null } | null;
   isPending: boolean;
+
+  /**
+   * 0–100 search visibility across *your* tracked terms.
+   *
+   * The design shows a rival "score" as though we had audited their whole
+   * site. We don't crawl competitor sites, so this measures the one thing we
+   * genuinely observe: how well they perform on the keywords you care about.
+   * Coverage (how many of your terms they appear for) weighted by rank
+   * quality. Null until the first sweep. Not a site-health score, and the UI
+   * labels it as visibility rather than borrowing the design's wording.
+   */
+  visibilityScore: number | null;
+}
+
+/**
+ * Position → value curve. Rank 1 is worth far more than rank 10, and past ~30
+ * a listing is worth almost nothing, so this decays rather than scaling
+ * linearly — a rival holding #1 and #40 should not read the same as two #20s.
+ */
+function positionValue(position: number): number {
+  if (position <= 0) return 0;
+  return 1 / (1 + Math.log2(position));
 }
 
 export interface MatrixRow {
@@ -214,6 +236,23 @@ export async function listCompetitors(
           ? { ...fromAudit.bestPage, whyItMatters: null }
           : null,
       isPending: competitor.rankings.length === 0,
+      // Sum of per-position value over *every* tracked term, not just the ones
+      // they rank for — a rival appearing on three of your fifty keywords
+      // should score low, however well those three place.
+      visibilityScore:
+        competitor.rankings.length === 0 || trackedKeywords.length === 0
+          ? null
+          : Math.max(
+              1,
+              Math.min(
+                100,
+                Math.round(
+                  (positions.reduce((sum, position) => sum + positionValue(position), 0) /
+                    trackedKeywords.length) *
+                    100,
+                ),
+              ),
+            ),
     };
   });
 

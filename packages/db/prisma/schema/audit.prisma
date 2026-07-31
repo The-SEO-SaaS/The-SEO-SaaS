@@ -95,12 +95,24 @@ enum IssueSeverity {
   NOTICE
 }
 
+/// The design's four report sections. Every one is computable from our own
+/// crawl — Speed measures server response time, not Core Web Vitals.
+enum IssueCategory {
+  TECHNICAL
+  ON_PAGE
+  CONTENT
+  SPEED
+}
+
 model AuditIssue {
   id      String @id @default(cuid())
   auditId String
   audit   Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
 
   severity IssueSeverity
+  /// Which of the four report sections this belongs under. Derived from the
+  /// check that produced it — see core/audit/categories.ts.
+  category IssueCategory @default(TECHNICAL)
   title    String
   /// Plain-English explanation. Never ship an issue without one.
   whyItMatters String

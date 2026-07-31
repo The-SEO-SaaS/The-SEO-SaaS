@@ -198,6 +198,7 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
         select: {
           id: true,
           severity: true,
+          category: true,
           title: true,
           whyItMatters: true,
           howToFix: true,
@@ -228,6 +229,7 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     band?: "POOR" | "FAIR" | "GOOD";
     counts?: { critical: number; warning: number; notice: number };
     healthy?: string[];
+    categories?: Record<"TECHNICAL" | "ON_PAGE" | "CONTENT" | "SPEED", number>;
     crawl?: { pagesCrawled?: number; pagesDiscovered?: number };
   };
 
@@ -261,6 +263,8 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
     pagesDiscovered: raw.crawl?.pagesDiscovered ?? 0,
     counts: raw.counts ?? { critical: 0, warning: 0, notice: 0 },
     healthy: raw.healthy ?? [],
+    /** Null for audits run before category scoring existed. */
+    categories: raw.categories ?? null,
 
     issues,
     competitors: competitors.map((competitor) => ({

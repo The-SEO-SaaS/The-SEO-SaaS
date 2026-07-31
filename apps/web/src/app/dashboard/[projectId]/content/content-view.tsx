@@ -11,7 +11,7 @@ import * as React from "react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 import { useContentLibrary } from "@/hooks/use-content";
-import type { BriefSummary, ContentLibrary, PostSummary } from "@/lib/api";
+import type { BriefSummary, ContentLibrary, HistoryEntry, PostSummary } from "@/lib/api";
 
 /**
  * The Content library — what the product builds, not what it recommends.
@@ -106,6 +106,8 @@ export function ContentView({ projectId }: { projectId: string }) {
           />
 
           <PostsSection posts={library.posts} projectId={projectId} />
+          <PageCopySection />
+          <HistorySection history={library.history} />
         </div>
       </div>
     </>
@@ -378,6 +380,80 @@ function PostsSection({ posts, projectId }: { posts: PostSummary[]; projectId: s
           </EmptyDescription>
         </Empty>
       )}
+    </section>
+  );
+}
+
+/**
+ * The design's "Generated content" section — landing and feature page copy.
+ *
+ * Page copy is a different generator from the article writer: different
+ * prompt, different output shape, different review flow. It isn't built, and
+ * this says so plainly rather than rendering an empty table that looks broken.
+ */
+function PageCopySection() {
+  return (
+    <section className="mt-9">
+      <SectionHead
+        title="Generated content"
+        subtitle="Landing and feature copy from opportunity modules"
+        right="Coming soon"
+      />
+
+      <div className="mt-4 rounded-2xl border border-dashed border-[#E2E6EC] px-5 py-6">
+        <p className="max-w-[64ch] text-[13px] leading-[1.6] text-[#6B7480]">
+          Your audit already finds feature and landing page opportunities — they&apos;re listed on
+          the dashboard. Writing the page copy for them is a separate generator and isn&apos;t
+          built yet. Blog briefs and posts above are unaffected.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/** Everything ever generated for this site, newest first. */
+function HistorySection({ history }: { history: HistoryEntry[] }) {
+  if (history.length === 0) return null;
+
+  return (
+    <section className="mt-9">
+      <SectionHead
+        title="Content history"
+        subtitle="Everything generated, newest first"
+        right={`${history.length} item${history.length === 1 ? "" : "s"}`}
+      />
+
+      {history.map((entry) => {
+        const row = (
+          <>
+            <span className="text-[12.5px] text-[#6B7480]">{formatDate(entry.createdAt)}</span>
+            <span className="truncate text-[13.5px] font-medium text-[#0B1220]">
+              {entry.title}
+            </span>
+            <span className="text-[12.5px] text-[#6B7480]">{entry.type}</span>
+            <span className="flex items-center gap-[7px] sm:justify-end">
+              <span
+                className="size-1.5 shrink-0 rounded-full"
+                style={{ background: STATUS_COLOUR[entry.status] }}
+              />
+              <span className="text-[12.5px] text-[#3F4854]">{STATUS_LABEL[entry.status]}</span>
+            </span>
+          </>
+        );
+
+        const className =
+          "grid items-center gap-x-4 gap-y-1 border-b border-[#F3F5F8] px-0.5 py-3 sm:grid-cols-[68px_minmax(0,1fr)_116px_120px]";
+
+        return entry.href ? (
+          <Link key={entry.id} href={entry.href} className={cn(className, "no-underline")}>
+            {row}
+          </Link>
+        ) : (
+          <div key={entry.id} className={className}>
+            {row}
+          </div>
+        );
+      })}
     </section>
   );
 }

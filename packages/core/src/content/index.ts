@@ -8,6 +8,7 @@ export {
   type ContentDetail,
   type BriefSummary,
   type PostSummary,
+  type HistoryEntry,
   type GeneratedBrief,
 } from "./service.ts";
 

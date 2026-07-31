@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { useMutation, useQuery } from "@/hooks/use-request";
-import { auditHistoryApi, type AuditHistory } from "@/lib/api";
+import { auditApi, auditHistoryApi, type AuditHistory, type AuditReport } from "@/lib/api";
 
 /**
  * Audit history for one site, plus re-running.
@@ -23,6 +23,19 @@ export function useAudits(projectId: string) {
     onSuccess: () => refetch(),
   });
 
+  // The design's audits screen is a detail view of the newest run, so the page
+  // needs that run's findings as well as the list. Reusing the public report
+  // endpoint avoids a second findings API; as the owner, the caller gets the
+  // unlocked payload.
+  const latestCompleted =
+    data?.audits.find((entry) => entry.status === "COMPLETED") ?? null;
+
+  const report = useQuery<AuditReport>(
+    (signal) => auditApi.report(latestCompleted!.publicId, signal),
+    [latestCompleted?.publicId],
+    { enabled: Boolean(latestCompleted) },
+  );
+
   const hasInFlight = Boolean(data?.inFlight);
 
   React.useEffect(() => {
@@ -34,6 +47,9 @@ export function useAudits(projectId: string) {
 
   return {
     history: data,
+    latest: latestCompleted,
+    report: report.data,
+    isReportLoading: report.isLoading,
     isLoading,
     isError,
     errorMessage: message,

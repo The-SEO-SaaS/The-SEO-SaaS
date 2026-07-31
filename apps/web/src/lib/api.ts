@@ -57,9 +57,12 @@ export interface AuditProgress {
   error: string | null;
 }
 
+export type IssueCategory = "TECHNICAL" | "ON_PAGE" | "CONTENT" | "SPEED";
+
 export interface AuditIssue {
   id: string;
   severity: IssueSeverity;
+  category: IssueCategory;
   title: string;
   whyItMatters: string;
   howToFix: string | null;
@@ -119,6 +122,8 @@ export interface AuditReport {
   counts: { critical: number; warning: number; notice: number };
   /** What's already right — reading only failures makes a good site feel broken. */
   healthy: string[];
+  /** 0–100 per report section. Null for audits run before this existed. */
+  categories: Record<IssueCategory, number> | null;
 
   issues: AuditIssue[];
   competitors: CompetitorSummary[];
@@ -451,10 +456,21 @@ export interface PostSummary {
   createdAt: string;
 }
 
+export interface HistoryEntry {
+  id: string;
+  title: string;
+  type: string;
+  status: ContentStatus;
+  createdAt: string;
+  href: string | null;
+}
+
 export interface ContentLibrary {
   site: { id: string; domain: string };
   briefs: BriefSummary[];
   posts: PostSummary[];
+  /** Everything ever generated for this site, newest first. */
+  history: HistoryEntry[];
   availableOpportunities: { id: string; title: string; rationale: string; keywords: string[] }[];
   /** `limit: -1` means unlimited. */
   quota: { used: number; limit: number; remaining: number; periodEnd: string };
@@ -603,6 +619,11 @@ export interface CompetitorStanding {
   trend: number[];
   bestPage: { url: string; title: string; whyItMatters: string | null } | null;
   isPending: boolean;
+  /**
+   * 0–100 visibility across your tracked terms. Not a site-health score — we
+   * don't crawl competitor sites.
+   */
+  visibilityScore: number | null;
 }
 
 export interface MatrixRow {

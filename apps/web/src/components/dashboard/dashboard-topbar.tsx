@@ -1,24 +1,22 @@
 "use client";
 
-import * as React from "react";
-
 import { HeaderChip } from "@/components/dashboard/page-header";
 import { SiteSwitcher } from "@/components/dashboard/site-switcher";
-import { rememberLastSiteId, useSites } from "@/hooks/use-sites";
+import { useSites } from "@/hooks/use-sites";
 
 /**
- * The dashboard's top bar.
+ * The dashboard index's top bar.
  *
  * Follows the design's bar — breadcrumb left, muted meta and a bordered chip
  * right — with the site switcher standing in for the second crumb, since this
  * build supports multiple sites where the design assumed one.
+ *
+ * Rendered by the dashboard page, not the layout: sibling screens draw their
+ * own headers, so a shared one would stack two bars. Remembering the current
+ * site moved to RememberSite for the same reason.
  */
 export function DashboardTopBar({ currentSiteId }: { currentSiteId: string }) {
   const { sites } = useSites();
-
-  React.useEffect(() => {
-    rememberLastSiteId(currentSiteId);
-  }, [currentSiteId]);
 
   const site = sites.find((entry) => entry.id === currentSiteId) ?? null;
 

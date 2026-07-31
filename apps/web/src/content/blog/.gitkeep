@@ -1,0 +1,22 @@
+# Field Notes — the marketing blog.
+#
+# Drop a .md file in here and it appears at /blog and /blog/<filename> on the
+# next build. No database, no admin screen: these are our own posts, so they
+# live with the code that renders them.
+#
+# Front matter (all optional except title):
+#
+#   ---
+#   title: What 3,000 crawls taught us about title tags
+#   excerpt: One line, used on the index card and as the meta description.
+#   category: Technical SEO
+#   date: 2026-07-14
+#   readMinutes: 6
+#   featured: true
+#   ---
+#
+#   Body is plain markdown from here down. Headings, lists, tables, quotes and
+#   links all render — same renderer the generated posts use.
+#
+# `featured: true` promotes one post to the large card at the top of /blog.
+# If several are marked, the newest wins.

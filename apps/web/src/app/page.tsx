@@ -1,9 +1,9 @@
-import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
 import {
   ArrowRight,
   ArrowUp,
+  ArrowUpRight,
   BarChart3,
   FileSearch,
   KeyRound,
@@ -12,6 +12,7 @@ import {
   TrendingDown,
   Wrench,
 } from "lucide-react";
+import Link from "next/link";
 
 import { AuditInput } from "@/components/marketing/audit-input";
 import { PricingTable } from "@/components/marketing/pricing-table";
@@ -109,6 +110,19 @@ const SHARE_OF_VOICE = [
   { label: "darkroast", value: 82, bar: "bg-[#EA580C]", text: "text-[#9A3412]" },
   { label: "you", value: 74, bar: "bg-ink-900", text: "text-ink-900" },
   { label: "brewline", value: 61, bar: "bg-[#C6CDD8]", text: "text-[#6B7480]" },
+];
+
+const CTA_CARDS = [
+  {
+    title: "Need a sample report?",
+    body: "See what a finished audit looks like before you run one on your own site.",
+    href: "/blog",
+  },
+  {
+    title: "Paid retries",
+    body: "Re-run an audit any time after you've made changes — it's unlimited on every plan.",
+    href: "/pricing",
+  },
 ];
 
 const CONTENT_ROWS = [
@@ -531,26 +545,62 @@ export default function LandingPage() {
         </p>
       </section>
 
-      {/* --- Closing CTA --------------------------------------------------- */}
-      <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 sm:py-24">
-        <FadeIn whenInView>
-          <IconTile tone="ink" size="xl" className="mx-auto mb-5 sm:mb-6">
-            <Search />
-          </IconTile>
+      {/*
+        Closing CTA. Spec: 80px/48px/72px padding, a `minmax(0,1fr) 380px` grid
+        at 56px gap, with a 44px-deep bottom rule closing the section. Copy left
+        at 35px/-0.032em/1.22 capped to 26ch, two side-by-side actions; two
+        bordered cards right, each with a 30px outlined arrow tile.
+      */}
+      <section className="px-5 pt-16 pb-14 sm:px-12 sm:pt-20 sm:pb-[72px]">
+        <div className="grid items-start gap-10 border-b border-[#EDEFF3] pb-11 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
+          <FadeIn whenInView>
+            <h2 className="font-display text-ink-900 max-w-[26ch] text-[26px] leading-[1.22] font-semibold tracking-[-0.032em] text-pretty sm:text-[35px]">
+              Find out what your site is losing, before your competitor does.
+            </h2>
+            <p className="mt-3.5 max-w-[52ch] text-[15px] leading-[1.65] text-[#5B6472]">
+              Run the free audit. If the findings are not worth acting on, you have lost eight
+              minutes and gained a shareable report.
+            </p>
 
-          <h2 className="font-display text-ink-900 text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl md:text-4xl">
-            Find out what your site is losing, before your competitor does
-          </h2>
+            <div className="mt-6 flex flex-wrap items-center gap-3.5">
+              <Link
+                href="/#hero"
+                className="bg-ink-900 rounded-[10px] px-[22px] py-[13px] text-[14px] font-medium text-white no-underline transition-opacity hover:opacity-90 hover:no-underline"
+              >
+                Run free audit
+              </Link>
+              <Link
+                href="/blog"
+                className="text-[13.5px] text-[#5B6472] no-underline hover:no-underline"
+              >
+                See a sample report
+              </Link>
+            </div>
+          </FadeIn>
 
-          <p className="text-ink-400 mx-auto mt-4 max-w-xl text-base leading-relaxed text-pretty sm:text-lg">
-            Run the free audit. If the findings aren&apos;t worth acting on, you&apos;ve lost two
-            minutes and gained a shareable report.
-          </p>
-
-          <div className="mx-auto mt-7 max-w-xl sm:mt-8">
-            <AuditInput />
-          </div>
-        </FadeIn>
+          <Stagger className="flex flex-col gap-3.5">
+            {CTA_CARDS.map((card) => (
+              <StaggerItem key={card.title}>
+                <Link
+                  href={card.href}
+                  className="flex items-start justify-between gap-4 rounded-2xl border border-[#E2E6EC] px-[22px] py-5 no-underline transition-colors hover:border-[#DFE3EA] hover:bg-[#FAFBFC] hover:no-underline"
+                >
+                  <div className="min-w-0">
+                    <div className="text-ink-900 text-[14.5px] font-semibold tracking-[-0.01em]">
+                      {card.title}
+                    </div>
+                    <p className="mt-1.5 text-[13px] leading-[1.55] text-[#5B6472]">
+                      {card.body}
+                    </p>
+                  </div>
+                  <span className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-[10px] border border-[#DFE3EA]">
+                    <ArrowUpRight className="size-3.5" strokeWidth={1.8} />
+                  </span>
+                </Link>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </div>
       </section>
 
       <MarketingFooter />
