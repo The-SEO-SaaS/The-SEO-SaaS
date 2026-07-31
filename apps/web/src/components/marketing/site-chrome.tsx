@@ -10,6 +10,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 
+import { useSession } from "@/hooks/use-session";
+
 /**
  * Marketing header and footer.
  *
@@ -78,6 +80,10 @@ export function AnnouncementBar() {
 export function MarketingHeader() {
   const [open, setOpen] = React.useState(false);
   const isActive = useIsActive();
+  // Someone already signed in has no use for a "Log in" link — sending them
+  // back into the app they're already inside of is the more useful default,
+  // and it doubles as a quiet signal that they're recognised.
+  const { isSignedIn } = useSession();
 
   return (
     <header className="bg-surface">
@@ -121,10 +127,10 @@ export function MarketingHeader() {
 
         <div className="hidden items-center justify-end md:flex">
           <Link
-            href="/login"
+            href={isSignedIn ? "/dashboard" : "/login"}
             className="font-display text-ink-900 rounded-[9px] border border-[#E4E7ED] bg-surface px-[15px] py-[8px] text-[13.5px] font-medium tracking-[-0.008em] no-underline shadow-[0_1px_1.5px_rgba(11,18,32,0.05)] transition-colors hover:bg-surface-sunken hover:no-underline"
           >
-            Log in
+            {isSignedIn ? "Dashboard" : "Log in"}
           </Link>
         </div>
 
@@ -171,10 +177,10 @@ export function MarketingHeader() {
                 variant="outline"
                 size="block"
                 className="mt-2"
-                render={<Link href="/login" />}
+                render={<Link href={isSignedIn ? "/dashboard" : "/login"} />}
                 onClick={() => setOpen(false)}
               >
-                Log in
+                {isSignedIn ? "Dashboard" : "Log in"}
               </Button>
             </nav>
           </motion.div>

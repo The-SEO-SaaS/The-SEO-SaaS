@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@theseosaas/ui/lib/utils";
+import { Info } from "lucide-react";
 import * as React from "react";
 
 /**
@@ -29,13 +32,32 @@ type Block =
   | { kind: "table"; header: string[]; rows: string[][] }
   | { kind: "rule" };
 
-export function Markdown({ children, className }: { children: string; className?: string }) {
+export function Markdown({
+  children,
+  className,
+  annotations,
+}: {
+  children: string;
+  className?: string;
+  /**
+   * Optional per-heading explanations, keyed by the heading's own text
+   * (trimmed, matched case-sensitively against what the model actually wrote).
+   * When a heading's text has an entry, an info trigger renders beside it —
+   * hover shows it, and it toggles open on click/tap so it works with no
+   * hover state at all.
+   *
+   * Nothing here changes rendering for a heading with no matching entry, so
+   * this is a no-op for every caller that doesn't pass it — the public
+   * `/blog/[slug]` field notes render exactly as before.
+   */
+  annotations?: Record<string, React.ReactNode>;
+}) {
   const blocks = React.useMemo(() => parse(children), [children]);
 
   return (
     <div className={cn("min-w-0", className)}>
       {blocks.map((block, index) => (
-        <BlockView key={index} block={block} isFirst={index === 0} />
+        <BlockView key={index} block={block} isFirst={index === 0} annotations={annotations} />
       ))}
     </div>
   );
@@ -239,36 +261,112 @@ function inline(text: string): React.ReactNode[] {
 
 // --- Rendering ---------------------------------------------------------------
 
+/**
+ * The info trigger a heading's `annotations` entry renders as.
+ *
+ * Hover shows it, matching a conventional tooltip — but hover doesn't exist on
+ * a phone, so it's also a toggle: tapping opens it and it stays open (rather
+ * than vanishing the instant the finger lifts, which is what a hover-only
+ * tooltip does under touch emulation), and it closes on an outside tap, a
+ * second tap, or Escape. One component covers both interaction models rather
+ * than shipping a separate mobile dialog for the same content.
+ */
+function HeadingHint({ content }: { content: React.ReactNode }) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef<HTMLSpanElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const closeIfOutside = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <span ref={rootRef} className="group/hint relative inline-flex shrink-0 self-center">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="What this section does"
+        aria-expanded={open}
+        className={cn(
+          "inline-flex size-[19px] items-center justify-center rounded-full border text-[#6B7480] transition-colors",
+          open
+            ? "border-[#0B1220] bg-[#0B1220] text-white"
+            : "border-[#DFE3EA] bg-white hover:border-[#0B1220] hover:text-[#0B1220]",
+        )}
+      >
+        <Info className="size-[11px]" strokeWidth={2} />
+      </button>
+
+      <span
+        role="tooltip"
+        className={cn(
+          "pointer-events-none absolute top-full left-1/2 z-30 mt-2 w-[min(280px,80vw)] -translate-x-1/2 rounded-lg border border-[#E2E6EC] bg-white px-3.5 py-3 text-left text-[12.5px] leading-[1.55] font-normal tracking-normal text-[#3F4854] opacity-0 shadow-[0_16px_32px_-14px_rgba(11,18,32,0.3)] transition-opacity duration-150",
+          "group-hover/hint:pointer-events-auto group-hover/hint:opacity-100",
+          open && "pointer-events-auto opacity-100",
+        )}
+      >
+        {content}
+      </span>
+    </span>
+  );
+}
+
 /** 17px/1.75 on #28303C — the design's body copy. */
 const BODY = "text-[15.5px] leading-[1.75] text-[#28303C] sm:text-[17px]";
 
-function BlockView({ block, isFirst }: { block: Block; isFirst: boolean }) {
+function BlockView({
+  block,
+  isFirst,
+  annotations,
+}: {
+  block: Block;
+  isFirst: boolean;
+  annotations?: Record<string, React.ReactNode>;
+}) {
   switch (block.kind) {
     case "heading": {
+      const hint = annotations?.[block.text.trim()];
+
       if (block.level === 1) {
         return (
           <h1
             className={cn(
-              "font-display text-[26px] leading-[1.22] font-semibold tracking-[-0.03em] text-pretty text-[#0B1220] sm:text-[34px]",
+              "font-display flex items-baseline gap-2.5 text-[26px] leading-[1.22] font-semibold tracking-[-0.03em] text-pretty text-[#0B1220] sm:text-[34px]",
               !isFirst && "mt-10",
             )}
           >
-            {inline(block.text)}
+            <span>{inline(block.text)}</span>
+            {hint ? <HeadingHint content={hint} /> : null}
           </h1>
         );
       }
 
       if (block.level === 2) {
         return (
-          <h2 className="font-display mt-[34px] text-[21px] font-semibold tracking-[-0.025em] text-[#0B1220] sm:text-[26px]">
-            {inline(block.text)}
+          <h2 className="font-display mt-[34px] flex items-baseline gap-2.5 text-[21px] font-semibold tracking-[-0.025em] text-[#0B1220] sm:text-[26px]">
+            <span>{inline(block.text)}</span>
+            {hint ? <HeadingHint content={hint} /> : null}
           </h2>
         );
       }
 
       return (
-        <h3 className="font-display mt-[30px] text-[18px] font-semibold tracking-[-0.018em] text-[#0B1220] sm:text-[20px]">
-          {inline(block.text)}
+        <h3 className="font-display mt-[30px] flex items-baseline gap-2.5 text-[18px] font-semibold tracking-[-0.018em] text-[#0B1220] sm:text-[20px]">
+          <span>{inline(block.text)}</span>
+          {hint ? <HeadingHint content={hint} /> : null}
         </h3>
       );
     }

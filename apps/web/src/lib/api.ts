@@ -519,6 +519,10 @@ export interface ContentDetail {
   keywords: string[];
   source: string;
   metaDescription: string | null;
+  /** One sentence on the article's strategy — powers the title's info tooltip. */
+  angle: string | null;
+  /** Each H2 the post was outlined from, plus what it had to establish — powers per-section tooltips. */
+  sections: { heading: string; covers: string }[];
   wordCount: number | null;
   lastError: string | null;
   createdAt: string;

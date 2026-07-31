@@ -59,6 +59,26 @@ export function useAuditFlow(publicId: string) {
   const isComplete = progress.data?.status === "COMPLETED";
   const isFailed = progress.data?.status === "FAILED";
 
+  /**
+   * The email gate is a one-time moment: "your audit just finished, want a
+   * copy?" It only makes sense the first time someone watches a crawl finish.
+   * Without this, every later visit to the same report — the owner checking
+   * back tomorrow, a shared link opened by a teammate — replayed the same
+   * "your audit is ready" screen in front of a report that had been sitting
+   * done for days.
+   *
+   * Captured from the *first* progress response this component sees: if the
+   * audit was already COMPLETED on that first poll, the page was loaded onto a
+   * finished audit rather than watching one finish live, so the gate is
+   * skipped entirely. If it was still running, the gate shows once when it
+   * later flips to COMPLETED.
+   */
+  const initialStatusRef = React.useRef<"unknown" | "wasRunning" | "alreadyDone">("unknown");
+  if (initialStatusRef.current === "unknown" && progress.data) {
+    initialStatusRef.current = progress.data.status === "COMPLETED" ? "alreadyDone" : "wasRunning";
+  }
+  const skipGate = initialStatusRef.current === "alreadyDone";
+
   // Reported once per outcome, not once per poll — `usePolling` re-renders every
   // 1.5s and would otherwise fire an event on each tick after the terminal
   // state. The ref, not state, because this must not itself cause a render.
@@ -88,7 +108,7 @@ export function useAuditFlow(publicId: string) {
     ? "failed"
     : !isComplete
       ? "running"
-      : gatePassed
+      : gatePassed || skipGate
         ? "report"
         : "email-gate";
 

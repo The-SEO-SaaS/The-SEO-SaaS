@@ -3,38 +3,51 @@
 import { Button } from "@theseosaas/ui/components/button";
 import { Empty, EmptyDescription, EmptyTitle } from "@theseosaas/ui/components/empty";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
-import { FadeIn } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
-import { AlertTriangle, Lock, Search } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, PenLine, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 import { useContentLibrary } from "@/hooks/use-content";
-import type { BriefSummary, ContentLibrary, HistoryEntry, PostSummary } from "@/lib/api";
+import type { ContentLibrary, HistoryEntry, PostSummary } from "@/lib/api";
 
 /**
  * The Content library — what the product builds, not what it recommends.
  *
  * The design's two-column screen: a 232px rail carrying the library nav and
- * this month's quota, beside stacked sections. Two of the design's four
- * sections are here — AI blog briefs and AI blog posts. "Generated content"
- * (landing and feature copy) and "Content history" are a different generator
- * and are not built.
+ * this month's quota, beside stacked sections. "Generated content" (landing
+ * and feature copy) and "Content history" are a different generator and are
+ * not built.
  *
- * The flow the screen is arranged around: an audit surfaces an opportunity →
- * a brief is written from it, free on every plan → the user approves the angle
- * → the full post is queued and costs one article from the month's allowance.
- * That split is why briefs and posts are separate sections rather than one
- * list with a status column.
+ * The design's other section was "AI blog briefs" — a free outline the user
+ * approved before the full post was queued. That approval step made sense
+ * when anyone could see a brief for free and decide whether it was worth a
+ * post; now the whole app sits behind a subscription, so there's no one left
+ * to show a brief to who hasn't already committed. "Write a blog post" now
+ * does both calls — brief, then post — in one click, and the brief itself is
+ * never surfaced. See `useContentLibrary.writePost`.
  *
  * Responsive: the design is desktop-only. The rail moves above the sections
  * below `lg` and becomes a horizontal quota strip; row action columns collapse
  * under their titles below `sm`.
  */
 export function ContentView({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const flow = useContentLibrary(projectId);
   const library = flow.library;
+
+  const canWrite = library ? library.quota.limit === -1 || library.quota.remaining > 0 : false;
+
+  const write = async (opportunityId: string) => {
+    const contentId = await flow.writePost(opportunityId);
+    // The post exists now and is generating — the detail page shows that
+    // progress itself (see PendingBody in content-detail-view.tsx) and swaps
+    // to the finished article in place once it's ready, so this is the only
+    // navigation the whole flow needs.
+    if (contentId) router.push(`/dashboard/${projectId}/content/${contentId}`);
+  };
 
   if (flow.isLoading && !library) {
     return (
@@ -73,14 +86,16 @@ export function ContentView({ projectId }: { projectId: string }) {
       <PageHeader
         section="Content"
         current={library.site.domain}
-        meta="Every asset traces back to an audit finding or keyword gap"
+        meta="Every post traces back to an audit finding or keyword gap"
         action={
           <Button
             size="sm"
-            disabled={!nextOpportunity || flow.isCreatingBrief}
-            onClick={() => nextOpportunity && flow.createBrief(nextOpportunity.id)}
+            disabled={!nextOpportunity || flow.isWritingPost || !canWrite}
+            onClick={() => nextOpportunity && write(nextOpportunity.id)}
+            title={canWrite ? undefined : "You've used this month's posts."}
           >
-            {flow.isCreatingBrief ? "Writing brief…" : "New brief"}
+            <PenLine />
+            {flow.isWritingPost ? "Writing…" : "Write a blog post"}
           </Button>
         }
       />
@@ -89,23 +104,20 @@ export function ContentView({ projectId }: { projectId: string }) {
         <LibraryRail library={library} />
 
         <div className="min-w-0 px-4 pt-6 pb-10 sm:px-6 lg:px-8 lg:pt-7 lg:pr-9 lg:pb-14">
-          {flow.briefError || flow.postError ? (
+          {flow.writeError ? (
             <div className="border-critical/20 bg-critical/5 text-critical-strong mb-6 rounded-lg border px-3.5 py-2.5 text-[13px]">
-              {flow.briefError ?? flow.postError}
+              {flow.writeError}
             </div>
           ) : null}
 
-          <BriefsSection
-            briefs={library.briefs}
-            opportunities={library.availableOpportunities}
-            onCreateBrief={flow.createBrief}
-            isCreatingBrief={flow.isCreatingBrief}
-            onWritePost={flow.writePost}
-            isWritingPost={flow.isWritingPost}
-            canWrite={library.quota.limit === -1 || library.quota.remaining > 0}
+          <PostsSection
+            posts={library.posts}
+            projectId={projectId}
+            nextOpportunity={nextOpportunity}
+            onWrite={write}
+            isWriting={flow.isWritingPost}
+            canWrite={canWrite}
           />
-
-          <PostsSection posts={library.posts} projectId={projectId} />
           <PageCopySection />
           <HistorySection history={library.history} />
         </div>
@@ -115,7 +127,7 @@ export function ContentView({ projectId }: { projectId: string }) {
 }
 
 function LibraryRail({ library }: { library: ContentLibrary }) {
-  const { quota, briefs, posts } = library;
+  const { quota, posts } = library;
   const unlimited = quota.limit === -1;
   const percent = unlimited ? 0 : Math.min(100, Math.round((quota.used / Math.max(1, quota.limit)) * 100));
 
@@ -126,8 +138,7 @@ function LibraryRail({ library }: { library: ContentLibrary }) {
       </div>
 
       <div className="mt-3.5 flex flex-col gap-px">
-        <RailRow label="AI blog briefs" count={briefs.length} isActive />
-        <RailRow label="AI blog posts" count={posts.length} />
+        <RailRow label="AI blog posts" count={posts.length} isActive />
       </div>
 
       <div className="mt-6 border-t border-[#EDEFF3] pt-[22px]">
@@ -151,7 +162,7 @@ function LibraryRail({ library }: { library: ContentLibrary }) {
         ) : null}
 
         <p className="mt-2.5 text-[11.5px] leading-[1.55] text-[#6B7480]">
-          Resets {formatResetDate(quota.periodEnd)}. Briefs stay unlimited on every plan.
+          Resets {formatResetDate(quota.periodEnd)}. Each post uses one from this allowance.
         </p>
 
         <Link
@@ -212,97 +223,6 @@ function SectionHead({
   );
 }
 
-function BriefsSection({
-  briefs,
-  opportunities,
-  onCreateBrief,
-  isCreatingBrief,
-  onWritePost,
-  isWritingPost,
-  canWrite,
-}: {
-  briefs: BriefSummary[];
-  opportunities: { id: string; title: string; rationale: string }[];
-  onCreateBrief: (opportunityId: string) => void;
-  isCreatingBrief: boolean;
-  onWritePost: (briefId: string) => void;
-  isWritingPost: boolean;
-  canWrite: boolean;
-}) {
-  return (
-    <section>
-      <SectionHead
-        title="AI blog briefs"
-        subtitle="Outline and target terms, ready to write"
-        right={`${briefs.length} brief${briefs.length === 1 ? "" : "s"}`}
-      />
-
-      {briefs.length > 0 ? (
-        briefs.map((brief) => (
-          <FadeIn
-            key={brief.id}
-            className="grid gap-4 border-b border-[#F3F5F8] px-0.5 py-4 sm:grid-cols-[minmax(0,1fr)_232px] sm:items-center sm:gap-5"
-          >
-            <div className="min-w-0">
-              <div className="text-[14px] font-medium text-[#0B1220]">{brief.title}</div>
-              <div className="mt-[5px] text-[12.5px] leading-[1.55] text-[#5B6472]">
-                {brief.source}
-              </div>
-              <div className="mt-1.5 text-[11.5px] text-[#6B7480]">
-                {brief.sections.length} sections · about {brief.wordTarget} words
-                {brief.angle ? ` · ${brief.angle}` : ""}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 sm:justify-end">
-              {brief.hasPost ? (
-                <span className="text-[12.5px] whitespace-nowrap text-[#6B7480]">
-                  Post written
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  disabled={isWritingPost || !canWrite}
-                  onClick={() => onWritePost(brief.id)}
-                  title={canWrite ? undefined : "You've used this month's posts."}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#FCD9B6] bg-[#FFFBF6] px-3 py-[7px] text-[12.5px] font-medium whitespace-nowrap text-[#EA580C] disabled:opacity-50"
-                >
-                  <Lock className="size-[11px]" strokeWidth={2} />
-                  {isWritingPost ? "Queueing…" : "Write full post"}
-                </button>
-              )}
-            </div>
-          </FadeIn>
-        ))
-      ) : (
-        <Empty className="mt-4 rounded-2xl border border-[#E2E6EC]">
-          <EmptyTitle>No briefs yet</EmptyTitle>
-          <EmptyDescription>
-            {opportunities.length > 0
-              ? "Your audit found opportunities worth writing about. Turn one into an outline."
-              : "Run an audit to surface the gaps worth writing about."}
-          </EmptyDescription>
-          {opportunities[0] ? (
-            <Button
-              size="sm"
-              className="mt-3"
-              disabled={isCreatingBrief}
-              onClick={() => onCreateBrief(opportunities[0]!.id)}
-            >
-              {isCreatingBrief ? "Writing brief…" : "Write a brief"}
-            </Button>
-          ) : null}
-        </Empty>
-      )}
-
-      <p className="mt-2.5 text-[12px] leading-[1.55] text-[#6B7480]">
-        Briefs are free. Writing the full post uses your monthly quota and needs an active
-        subscription.
-      </p>
-    </section>
-  );
-}
-
 const STATUS_LABEL: Record<PostSummary["status"], string> = {
   DRAFT: "Draft",
   GENERATING: "Writing…",
@@ -321,63 +241,121 @@ const STATUS_COLOUR: Record<PostSummary["status"], string> = {
   FAILED: "#DC2626",
 };
 
-function PostsSection({ posts, projectId }: { posts: PostSummary[]; projectId: string }) {
+function PostsSection({
+  posts,
+  projectId,
+  nextOpportunity,
+  onWrite,
+  isWriting,
+  canWrite,
+}: {
+  posts: PostSummary[];
+  projectId: string;
+  nextOpportunity: { id: string; title: string; rationale: string } | null;
+  onWrite: (opportunityId: string) => void;
+  isWriting: boolean;
+  canWrite: boolean;
+}) {
   return (
-    <section className="mt-9">
+    <section>
       <SectionHead
         title="AI blog posts"
-        subtitle="Written from a brief, ready to publish or export"
+        subtitle="Written in full, ready to publish or export"
         right={`${posts.length} post${posts.length === 1 ? "" : "s"}`}
       />
 
       {posts.length > 0 ? (
-        posts.map((post) => (
-          <div
-            key={post.id}
-            className="grid gap-3 border-b border-[#F3F5F8] px-0.5 py-4 sm:grid-cols-[minmax(0,1fr)_148px_112px] sm:items-center sm:gap-5"
-          >
-            <div className="min-w-0">
-              <div className="text-[14px] font-medium text-[#0B1220]">{post.title}</div>
-              <div className="mt-[5px] text-[12.5px] leading-[1.55] text-[#5B6472]">
-                {post.source}
-              </div>
-              <div className="mt-1.5 text-[11.5px] text-[#6B7480]">
-                {post.wordCount ? `${post.wordCount.toLocaleString()} words · ` : ""}
-                {formatDate(post.createdAt)}
-              </div>
-              {post.status === "FAILED" && post.lastError ? (
-                <div className="text-critical mt-1.5 text-[11.5px]">{post.lastError}</div>
-              ) : null}
-            </div>
+        posts.map((post) => {
+          const isReady =
+            post.status === "GENERATED" ||
+            post.status === "PUBLISHED" ||
+            post.status === "ARCHIVED";
+          const href = `/dashboard/${projectId}/content/${post.id}`;
 
-            <div className="flex items-center gap-[7px]">
-              <span
-                className={cn(
-                  "size-1.5 shrink-0 rounded-full",
-                  post.status === "GENERATING" && "animate-pulse",
+          return (
+            <div
+              key={post.id}
+              className="grid gap-3 border-b border-[#F3F5F8] px-0.5 py-4 sm:grid-cols-[minmax(0,1fr)_148px_112px] sm:items-center sm:gap-5"
+            >
+              <div className="min-w-0">
+                {/*
+                  Opened in a new tab so clicking a title is a "look at this"
+                  action rather than a "leave the list" one — the value of a
+                  finished post should be one click away, not a click-then-
+                  click-back away.
+                */}
+                {isReady ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group/title inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0B1220] no-underline hover:no-underline"
+                  >
+                    <span className="truncate">{post.title}</span>
+                    <ArrowUpRight
+                      className="size-3.5 shrink-0 text-[#9AA2AE] transition-colors group-hover/title:text-[#0B1220]"
+                      strokeWidth={1.9}
+                    />
+                  </a>
+                ) : (
+                  <div className="text-[14px] font-medium text-[#0B1220]">{post.title}</div>
                 )}
-                style={{ background: STATUS_COLOUR[post.status] }}
-              />
-              <span className="text-[12.5px] text-[#3F4854]">{STATUS_LABEL[post.status]}</span>
-            </div>
+                <div className="mt-[5px] text-[12.5px] leading-[1.55] text-[#5B6472]">
+                  {post.source}
+                </div>
+                <div className="mt-1.5 text-[11.5px] text-[#6B7480]">
+                  {post.wordCount ? `${post.wordCount.toLocaleString()} words · ` : ""}
+                  {formatDate(post.createdAt)}
+                </div>
+                {post.status === "FAILED" && post.lastError ? (
+                  <div className="text-critical mt-1.5 text-[11.5px]">{post.lastError}</div>
+                ) : null}
+              </div>
 
-            <div className="text-[12.5px] font-medium sm:text-right">
-              {post.status === "GENERATED" ||
-              post.status === "PUBLISHED" ||
-              post.status === "ARCHIVED" ? (
-                <Link href={`/dashboard/${projectId}/content/${post.id}`}>Open</Link>
-              ) : (
-                <span className="text-[#9AA2AE]">—</span>
-              )}
+              <div className="flex items-center gap-[7px]">
+                <span
+                  className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    post.status === "GENERATING" && "animate-pulse",
+                  )}
+                  style={{ background: STATUS_COLOUR[post.status] }}
+                />
+                <span className="text-[12.5px] text-[#3F4854]">{STATUS_LABEL[post.status]}</span>
+              </div>
+
+              <div className="text-[12.5px] font-medium sm:text-right">
+                {isReady ? (
+                  <a href={href} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                ) : post.status === "GENERATING" ? (
+                  <Link href={href}>Watch progress</Link>
+                ) : (
+                  <span className="text-[#9AA2AE]">—</span>
+                )}
+              </div>
             </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <Empty className="mt-4 rounded-2xl border border-[#E2E6EC]">
           <EmptyTitle>No posts written yet</EmptyTitle>
           <EmptyDescription>
-            Approve a brief above and we&apos;ll write the full article from it.
+            {nextOpportunity
+              ? "Your audit found opportunities worth writing about. Turn one into a post."
+              : "Run an audit to surface the gaps worth writing about."}
           </EmptyDescription>
+          {nextOpportunity ? (
+            <Button
+              size="sm"
+              className="mt-3"
+              disabled={isWriting || !canWrite}
+              onClick={() => onWrite(nextOpportunity.id)}
+              title={canWrite ? undefined : "You've used this month's posts."}
+            >
+              {isWriting ? "Writing…" : "Write a blog post"}
+            </Button>
+          ) : null}
         </Empty>
       )}
     </section>

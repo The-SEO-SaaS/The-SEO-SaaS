@@ -5,7 +5,17 @@ import { Empty, EmptyDescription, EmptyTitle } from "@theseosaas/ui/components/e
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
 import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
 import { cn } from "@theseosaas/ui/lib/utils";
-import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -36,12 +46,22 @@ const INTENT_LABEL: Record<KeywordIntent, string> = {
   NAVIGATIONAL: "Brand",
 };
 
-/** The design's pill styling per filter state, as literal values. */
+/**
+ * Colour-coded by intent warmth, not just labelled by it.
+ *
+ * All four used to render in the same two colours (orange twice, then teal,
+ * then grey), which meant scanning the term column for "what's actually worth
+ * writing about" required reading every pill's text. The scale now runs hot to
+ * cold left to right: green for transactional (someone about to buy), amber
+ * for commercial (still comparing, still warm), orange for informational
+ * (learning — further from a purchase), red for navigational (a brand search,
+ * the one intent this page can't really write content to win).
+ */
 const INTENT_PILL: Record<KeywordIntent, string> = {
-  TRANSACTIONAL: "border-[#FCD9B6] bg-[#FFF6EE] text-[#EA580C]",
-  COMMERCIAL: "border-[#FCD9B6] bg-[#FFF6EE] text-[#EA580C]",
-  INFORMATIONAL: "border-[#D8F3E4] bg-[#F5FCF8] text-[#0F766E]",
-  NAVIGATIONAL: "border-[#E2E6EC] bg-white text-[#6B7480]",
+  TRANSACTIONAL: "border-[#BBE8CB] bg-[#EAF7EF] text-[#15803D]",
+  COMMERCIAL: "border-[#FCE4B0] bg-[#FFF8EA] text-[#B45309]",
+  INFORMATIONAL: "border-[#FCD9B6] bg-[#FFF6EE] text-[#EA580C]",
+  NAVIGATIONAL: "border-[#F8C9C9] bg-[#FEF2F2] text-[#DC2626]",
 };
 
 type IntentFilter = KeywordIntent | "ALL";
@@ -533,21 +553,31 @@ function KeywordTable({
               </div>
 
               {/* The design's action column is a single 12.5px link. Ours
-                  carries two, since tracking is the lever this page controls. */}
+                  carries two icon buttons, since tracking is the lever this
+                  page controls — pause/resume sitting right beside remove,
+                  same weight and size, rather than one as text and one as an
+                  icon. */}
               <div className="flex items-center gap-3 lg:justify-end">
                 <button
                   type="button"
                   disabled={isBusy}
                   onClick={() => onToggleTracked(row.id, !row.isTracked)}
-                  className="text-[12.5px] font-medium whitespace-nowrap text-[#0B1220] disabled:opacity-50"
+                  aria-label={row.isTracked ? `Pause tracking ${row.term}` : `Resume tracking ${row.term}`}
+                  title={row.isTracked ? "Pause tracking" : "Resume tracking"}
+                  className="text-[#9AA2AE] transition-colors hover:text-[#0B1220] disabled:opacity-50"
                 >
-                  {row.isTracked ? "Pause" : "Track"}
+                  {row.isTracked ? (
+                    <Pause className="size-3.5" />
+                  ) : (
+                    <Play className="size-3.5" />
+                  )}
                 </button>
                 <button
                   type="button"
                   disabled={isBusy}
                   onClick={() => onRemove(row.id)}
                   aria-label={`Remove ${row.term}`}
+                  title="Remove"
                   className="text-[#9AA2AE] transition-colors hover:text-[#DC2626] disabled:opacity-50"
                 >
                   <Trash2 className="size-3.5" />
@@ -604,7 +634,16 @@ function GapsSection({
               ) : null}
             </div>
 
-            <div className="text-[12.5px] text-[#3F4854]">{INTENT_LABEL[gap.intent]}</div>
+            <div>
+              <span
+                className={cn(
+                  "inline-flex shrink-0 rounded-full border px-2 py-px text-[10.5px] whitespace-nowrap",
+                  INTENT_PILL[gap.intent],
+                )}
+              >
+                {INTENT_LABEL[gap.intent]}
+              </span>
+            </div>
 
             <button
               type="button"

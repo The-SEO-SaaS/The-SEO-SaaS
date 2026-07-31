@@ -224,7 +224,7 @@ export function OnboardingFlow() {
       step="plan"
       eyebrow="CHOOSE A PLAN"
       title="Pick the plan that matches your publishing pace"
-      subtitle="The audit and briefs are already yours. The plan decides how many full articles we write each month."
+      subtitle="The audit is already yours. The plan decides how many full blog posts we write each month."
       help={{
         title: "Based on your setup",
         body: `${flow.selectedKeywords.size} keyword${flow.selectedKeywords.size === 1 ? "" : "s"} and ${flow.selectedCompetitors.size} competitor${flow.selectedCompetitors.size === 1 ? "" : "s"} fit ${

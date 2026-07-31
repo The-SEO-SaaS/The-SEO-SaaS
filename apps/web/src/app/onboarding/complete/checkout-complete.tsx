@@ -319,8 +319,8 @@ function WaitingPanel({ result }: { result: CompleteOnboardingResult }) {
       detail: "Listed on the audits page, worst first.",
     },
     {
-      title: `${waiting.briefs} article brief${waiting.briefs === 1 ? "" : "s"}`,
-      detail: "Built from the gaps you just selected.",
+      title: `${waiting.briefs} blog post idea${waiting.briefs === 1 ? "" : "s"}`,
+      detail: "Built from the gaps you just selected — write them from Content anytime.",
     },
     {
       title: `${waiting.trackedKeywords} keyword${waiting.trackedKeywords === 1 ? "" : "s"} tracked`,

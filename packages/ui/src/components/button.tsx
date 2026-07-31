@@ -26,8 +26,15 @@ const buttonVariants = cva(
          * The "act now" button, reserved for opportunity actions such as
          * "Generate 3 articles". Use sparingly: if everything is urgent,
          * nothing is.
+         *
+         * Deliberately not `bg-opportunity` (#EA580C) — white text on that
+         * fill is 3.56:1, under the 4.5:1 WCAG AA floor for text this size, and
+         * read as low-contrast/washed-out wherever this variant showed up
+         * (keyword and opportunity CTAs included). #C2410C is the same hue,
+         * one step darker, at 5.18:1 — still unmistakably the "orange, act on
+         * this" colour, legible instead of just tinted.
          */
-        opportunity: "bg-opportunity text-white hover:bg-opportunity/90",
+        opportunity: "bg-[#C2410C] text-white hover:bg-[#A63A0D]",
         destructive: "bg-critical text-white hover:bg-critical-strong",
         link: "text-ink-900 underline-offset-4 hover:underline",
       },

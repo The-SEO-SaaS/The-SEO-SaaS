@@ -1,5 +1,6 @@
 import prisma from "@theseosaas/db";
 
+import { assertWithinStructuralLimit } from "../billing/quota.ts";
 import { AppError } from "../errors.ts";
 import { normalizeDomain } from "../util/domain.ts";
 import type { GoogleProfile } from "./google.ts";
@@ -147,12 +148,33 @@ export async function claimAudit(
 
   const domain = normalizeDomain(audit.domain);
 
-  const project = await prisma.project.upsert({
+  const existingProject = await prisma.project.findUnique({
     where: { userId_domain: { userId, domain } },
-    create: { userId, domain, name: domain },
-    update: {},
     select: { id: true },
   });
+
+  if (!existingProject) {
+    const projectCount = await prisma.project.count({ where: { userId } });
+
+    // The account's very first project is exempt: it's created right here,
+    // as part of claiming the audit that led someone into onboarding — before
+    // the "plan" step has necessarily run. Gating it on entitlements would
+    // reject every brand-new signup before they've had the chance to pay.
+    // Anything past the first is a genuinely additional site, and by
+    // definition can only happen on an account that already got through
+    // onboarding once — so it has to fit whatever plan that account is
+    // actually on now (which may since have lapsed).
+    if (projectCount > 0) {
+      await assertWithinStructuralLimit(userId, "projects");
+    }
+  }
+
+  const project =
+    existingProject ??
+    (await prisma.project.create({
+      data: { userId, domain, name: domain },
+      select: { id: true },
+    }));
 
   await prisma.$transaction([
     prisma.audit.update({

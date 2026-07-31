@@ -72,6 +72,10 @@ export interface ContentDetail {
   keywords: string[];
   source: string;
   metaDescription: string | null;
+  /** One sentence on the article's strategy — the brief's own "angle". */
+  angle: string | null;
+  /** The outline this post was written from: each H2 plus what it had to establish. */
+  sections: { heading: string; covers: string }[];
   wordCount: number | null;
   lastError: string | null;
   createdAt: string;
@@ -235,6 +239,8 @@ export async function getContentItem(
     keywords: content.keywords,
     source: sourceLine(content.keywords, content.rationale),
     metaDescription: parsed.success ? parsed.data.metaDescription : null,
+    angle: parsed.success ? parsed.data.angle : null,
+    sections: parsed.success ? parsed.data.sections : [],
     wordCount: content.wordCount,
     lastError: content.lastError,
     createdAt: content.createdAt.toISOString(),

@@ -206,7 +206,7 @@ const PROBLEMS = [
     accent: "text-[#0F766E]",
     title: "Finding a gap isn't closing it",
     body: "Every other tool hands you a keyword list and stops. Someone still has to write the page.",
-    answer: "Briefs and drafts come with the finding",
+    answer: "The full post gets written for you",
   },
 ];
 

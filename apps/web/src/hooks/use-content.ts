@@ -19,14 +19,28 @@ export function useContentLibrary(projectId: string) {
     [projectId],
   );
 
-  const briefMutation = useMutation(
-    (opportunityId: string) => contentApi.createBrief(projectId, opportunityId),
+  /**
+   * One click, one post — not the brief-then-approve flow the API still
+   * models internally.
+   *
+   * The brief is free and returns inline, so nothing is lost by writing it
+   * and immediately queuing the full post rather than making the user look at
+   * an outline and press a second button — that intermediate approval step
+   * only made sense back when every user saw it for free before deciding
+   * whether to spend a post on it. Now the app is subscriber-only end to end,
+   * so "write a blog post" can just mean write a blog post.
+   *
+   * Returns the new post's id so the caller can navigate straight to it — the
+   * detail page's own polling picks up from "GENERATING" and shows the rest.
+   */
+  const writeMutation = useMutation(
+    async (opportunityId: string) => {
+      const brief = await contentApi.createBrief(projectId, opportunityId);
+      const { contentId } = await contentApi.writePost(projectId, brief.id);
+      return contentId;
+    },
     { onSuccess: () => refetch() },
   );
-
-  const postMutation = useMutation((briefId: string) => contentApi.writePost(projectId, briefId), {
-    onSuccess: () => refetch(),
-  });
 
   const isGenerating = Boolean(data?.posts.some((post) => post.status === "GENERATING"));
 
@@ -44,13 +58,9 @@ export function useContentLibrary(projectId: string) {
     errorMessage: message,
     refetch,
 
-    createBrief: briefMutation.mutate,
-    isCreatingBrief: briefMutation.isLoading,
-    briefError: briefMutation.message,
-
-    writePost: postMutation.mutate,
-    isWritingPost: postMutation.isLoading,
-    postError: postMutation.message,
+    writePost: writeMutation.mutate,
+    isWritingPost: writeMutation.isLoading,
+    writeError: writeMutation.message,
   };
 }
 

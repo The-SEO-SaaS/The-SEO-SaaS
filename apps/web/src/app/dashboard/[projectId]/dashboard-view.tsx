@@ -605,7 +605,7 @@ function ContentPipelineSection({ dashboard }: { dashboard: SiteDashboard }) {
           <EmptyTitle>Nothing being written yet</EmptyTitle>
           <EmptyDescription>
             {dashboard.figures.opportunityCount > 0
-              ? `${dashboard.figures.opportunityCount} opportunit${dashboard.figures.opportunityCount === 1 ? "y is" : "ies are"} ready to turn into briefs.`
+              ? `${dashboard.figures.opportunityCount} opportunit${dashboard.figures.opportunityCount === 1 ? "y is" : "ies are"} ready to turn into blog posts.`
               : "Run an audit to surface something worth writing about."}
           </EmptyDescription>
           <Button size="sm" variant="outline" className="mt-3" render={<Link href={contentHref} />}>

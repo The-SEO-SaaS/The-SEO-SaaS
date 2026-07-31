@@ -9,6 +9,11 @@ import { AlertTriangle, Check, Copy, Download, Info, Search } from "lucide-react
 import Link from "next/link";
 import * as React from "react";
 
+import {
+  ContentChecklist,
+  progressPercentFor,
+  useContentProgressSteps,
+} from "@/components/content/content-checklist";
 import { useContentItem } from "@/hooks/use-content";
 import type { ContentDetail } from "@/lib/api";
 
@@ -38,6 +43,60 @@ export function ContentDetailView({
   const flow = useContentItem(contentId);
   const [mode, setMode] = React.useState<"preview" | "markdown">("preview");
   const item = flow.item;
+
+  /**
+   * "What is this section for?" per heading — the strategy behind the post,
+   * surfaced inline rather than left for the reader to infer. The title
+   * itself explains the article's overall angle and target keyword(s); each
+   * H2 explains what that section specifically had to establish, straight
+   * from the outline the model wrote it to (see `angle` / `sections` on
+   * `ContentDetail`, sourced from the brief's own JSON — nothing here is
+   * invented after the fact).
+   *
+   * Keyed by literal heading text, matching how `Markdown` looks entries up.
+   */
+  const annotations = React.useMemo(() => {
+    if (!item) return undefined;
+
+    const map: Record<string, React.ReactNode> = {};
+
+    if (item.angle) {
+      map[item.title.trim()] = (
+        <>
+          <span className="text-ink-900 block text-[11px] font-semibold tracking-[0.06em] uppercase">
+            Strategy
+          </span>
+          <span className="mt-1 block">{item.angle}</span>
+          {item.keywords.length > 0 ? (
+            <span className="mt-2 block text-[#6B7480]">
+              Targets{" "}
+              {item.keywords.map((keyword, index) => (
+                <React.Fragment key={keyword}>
+                  {index > 0 ? ", " : ""}
+                  <span className="rounded-[3px] bg-[#F1F3F7] px-[4px] py-px font-mono text-[11.5px]">
+                    {keyword}
+                  </span>
+                </React.Fragment>
+              ))}
+            </span>
+          ) : null}
+        </>
+      );
+    }
+
+    for (const section of item.sections) {
+      map[section.heading.trim()] = (
+        <>
+          <span className="text-ink-900 block text-[11px] font-semibold tracking-[0.06em] uppercase">
+            This section
+          </span>
+          <span className="mt-1 block">{section.covers}</span>
+        </>
+      );
+    }
+
+    return map;
+  }, [item]);
 
   if (flow.isLoading && !item) {
     return (
@@ -94,7 +153,7 @@ export function ContentDetailView({
                     </p>
                   ) : null}
 
-                  <Markdown>{item.body}</Markdown>
+                  <Markdown annotations={annotations}>{item.body}</Markdown>
 
                   <hr className="my-[34px] border-0 border-t border-[#E2E6EC]" />
 
@@ -283,25 +342,78 @@ function DownloadButton({ item }: { item: ContentDetail }) {
   );
 }
 
+/**
+ * The generating state, branded to match the audit's own crawl screen — same
+ * centred 660px column, eyebrow, progress rail and step checklist — rather
+ * than the plain spinner-and-caption card this used to be. Writing a post is
+ * the other multi-minute wait in the product, so it should feel like the
+ * other one: work happening, not a page that's stalled.
+ *
+ * This *is* the redirect target: `writeFullPost` sends the browser here the
+ * instant generation is queued, and `useContentItem`'s polling swaps this out
+ * for the finished article in place, with no second navigation needed.
+ */
 function PendingBody({ item, projectId }: { item: ContentDetail; projectId: string }) {
   const isFailed = item.status === "FAILED";
+  const activeStep = useContentProgressSteps(!isFailed);
+
+  if (isFailed) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <IconTile tone="critical" size="xl" className="mx-auto">
+            <AlertTriangle />
+          </IconTile>
+          <h1 className="font-display text-ink-900 text-2xl font-semibold">
+            This post couldn&apos;t be written
+          </h1>
+          <p className="text-ink-400 text-base leading-relaxed">
+            {item.lastError ??
+              "Something went wrong during generation. Your monthly allowance wasn't charged."}
+          </p>
+          <Button variant="outline" render={<Link href={`/dashboard/${projectId}/content`} />}>
+            Back to content
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  const pct = progressPercentFor(activeStep);
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md space-y-4 text-center">
-        <IconTile tone={isFailed ? "critical" : "ink"} size="xl" className={cn("mx-auto", !isFailed && "animate-pulse")}>
-          {isFailed ? <AlertTriangle /> : <Search />}
-        </IconTile>
-        <h1 className="font-display text-ink-900 text-2xl font-semibold">
-          {isFailed ? "This post couldn't be written" : "Writing your post"}
-        </h1>
-        <p className="text-ink-400 text-base leading-relaxed">
-          {isFailed
-            ? (item.lastError ??
-              "Something went wrong during generation. Your monthly allowance wasn't charged.")
-            : "This takes a minute or two. You don't need to stay on this page — it'll be in your library when it's done."}
+    <main className="flex flex-1 items-center justify-center px-5 py-12 sm:px-10 sm:py-16">
+      <div className="w-full max-w-[660px]">
+        <div className="text-[11px] font-semibold tracking-[0.12em] text-[#6B7480]">
+          WRITING YOUR POST
+        </div>
+
+        <div className="mt-3.5 flex items-baseline justify-between gap-5">
+          <div className="text-ink-900 truncate text-[22px] font-medium tracking-[-0.025em] sm:text-[26px]">
+            {item.title}
+          </div>
+          <div className="shrink-0 text-[13px] text-[#6B7480]">{pct}%</div>
+        </div>
+
+        <div className="mt-4 h-1 w-full overflow-hidden rounded-sm bg-[#F1F3F7]">
+          <div
+            className="bg-ink-900 h-full transition-[width] duration-500 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <ContentChecklist className="mt-[30px]" activeIndex={activeStep} />
+
+        <p className="mt-6 text-[12.5px] leading-[1.55] text-[#6B7480]">
+          This takes a minute or two. You don&apos;t need to stay on this page — it&apos;ll be
+          here, finished, whenever you come back.
         </p>
-        <Button variant="outline" render={<Link href={`/dashboard/${projectId}/content`} />}>
+
+        <Button
+          variant="outline"
+          className="mt-5"
+          render={<Link href={`/dashboard/${projectId}/content`} />}
+        >
           Back to content
         </Button>
       </div>

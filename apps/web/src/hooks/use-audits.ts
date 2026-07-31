@@ -30,8 +30,19 @@ export function useAudits(projectId: string) {
   const latestCompleted =
     data?.audits.find((entry) => entry.status === "COMPLETED") ?? null;
 
+  // `latestCompleted` can still be null on the render that flips `enabled` to
+  // true — `useQuery`'s effect keys off `[enabled, ...deps]`, and a refetch
+  // that briefly clears `data` (a failed 5s poll while a run is in flight)
+  // recomputes this as null on the same tick the previous `publicId` dep is
+  // still in scope. The old `latestCompleted!.publicId` non-null assertion
+  // crashed exactly there — "Cannot read properties of null (reading
+  // 'publicId')" on the audits page. Checking here instead of asserting means
+  // a stray invocation rejects the request instead of throwing past React.
   const report = useQuery<AuditReport>(
-    (signal) => auditApi.report(latestCompleted!.publicId, signal),
+    (signal) =>
+      latestCompleted
+        ? auditApi.report(latestCompleted.publicId, signal)
+        : Promise.reject(new Error("No completed audit to fetch yet")),
     [latestCompleted?.publicId],
     { enabled: Boolean(latestCompleted) },
   );
