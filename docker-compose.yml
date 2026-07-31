@@ -1,5 +1,13 @@
 name: theseosaas
 
+# Two images, one database. The database itself isn't a service here — both apps expect a
+# managed Postgres reachable over TLS via DATABASE_URL, which is also what prisma.config.ts and
+# @prisma/adapter-pg assume. Point them at a local one by setting DATABASE_URL in the env file
+# if you want to run fully offline.
+#
+# Migrations are owned by `worker` (see apps/worker/Dockerfile). `web` waits for it to become
+# healthy so it never serves a request against a schema that hasn't been migrated yet.
+
 services:
   web:
     build:
@@ -11,6 +19,9 @@ services:
     env_file:
       - path: apps/web/.env
         required: false
+    depends_on:
+      worker:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -23,4 +34,35 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    # `init: true` matters more here than for web: the CMD is a shell wrapper around
+    # `prisma migrate deploy && exec node`, and without a real init process a stopped container
+    # can leave the migrate child reparented and unreaped.
+    init: true
+    env_file:
+      - path: apps/web/.env
+        required: false
+    # No HTTP surface to probe, so this checks the thing `web` actually depends on: that the
+    # database is reachable and every migration has been applied. `prisma migrate status` exits
+    # non-zero on both a connection failure and a pending migration, which is exactly the gate
+    # web's `depends_on` wants.
+    #
+    # It does not prove the queue loop is still consuming — that would need a heartbeat the
+    # worker doesn't write today. If the process dies the container exits and `restart` handles
+    # it; a wedged-but-alive consumer would go unnoticed, which is a known gap rather than
+    # something this line covers.
+    healthcheck:
+      test:
+        ["CMD", "sh", "-c", "cd /app/packages/db && pnpm exec prisma migrate status"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      # Generous: the first start also runs `prisma migrate deploy`, and a cold managed
+      # Postgres can take a while to accept the first connection.
+      start_period: 60s
     restart: unless-stopped
