@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node --experimental-strip-types --watch src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
+    "// audit": "One-shot audit against a real site, verbose, no queue. No --watch: an audit takes minutes and a file save mid-run would restart it.",
+    "audit": "node --experimental-strip-types src/dev-audit.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
