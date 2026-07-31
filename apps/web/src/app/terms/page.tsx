@@ -21,8 +21,9 @@ const SECTIONS: LegalSection[] = [
     title: "Who we are",
     body: (
       <>
-        TheSEOSaaS is operated by Field Notes Software Ltd, registered in England. When these
-        terms say &ldquo;we&rdquo;, that&apos;s who you&apos;re dealing with.
+        TheSEOSaaS is operated by The SEO SaaS. When these terms say &ldquo;we&rdquo;,
+        that&apos;s who you&apos;re dealing with. Reach us any time at{" "}
+        <a href="mailto:kin@theseosaas.com">kin@theseosaas.com</a>.
       </>
     ),
   },

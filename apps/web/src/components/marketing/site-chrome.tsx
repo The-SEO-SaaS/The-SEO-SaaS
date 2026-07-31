@@ -198,6 +198,7 @@ const FOOTER_COLUMNS = [
     title: "COMPANY",
     links: [
       { href: "/about", label: "About" },
+      { href: "/contact", label: "Contact" },
       { href: "/terms", label: "Terms" },
       { href: "/privacy", label: "Privacy" },
     ],
@@ -207,6 +208,7 @@ const FOOTER_COLUMNS = [
     links: [
       { href: "/blog", label: "Field notes" },
       { href: "/#pricing", label: "Plans" },
+      { href: "/status", label: "Status" },
     ],
   },
 ] as const;
@@ -293,7 +295,7 @@ export function MarketingFooter() {
 
         <div className="mt-9 flex flex-col gap-3 border-t border-[#1E2635] pt-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
           <span className="text-[12px] text-[#7C8798]">
-            © {new Date().getFullYear()} Field Notes Software Ltd
+            © {new Date().getFullYear()} The SEO SaaS
           </span>
           <div className="flex gap-5">
             {LEGAL_LINKS.map((link) => (

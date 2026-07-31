@@ -4,7 +4,7 @@ import { FadeIn } from "@theseosaas/ui/components/motion";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AnnouncementBar, MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-chrome";
 import { getAllPosts, getTopics, type BlogSummary } from "@/lib/blog";
 
 export const metadata: Metadata = {
@@ -36,7 +36,6 @@ export default function BlogIndexPage() {
 
   return (
     <>
-      <AnnouncementBar />
       <MarketingHeader />
 
       <main className="mx-auto w-full max-w-[1180px] px-5 pt-14 pb-20 sm:px-8 lg:px-10 lg:pt-20">

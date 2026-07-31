@@ -5,7 +5,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
-  AnnouncementBar,
   MarketingFooter,
   MarketingHeader,
 } from "@/components/marketing/site-chrome";
@@ -48,7 +47,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <>
-      <AnnouncementBar />
       <MarketingHeader />
 
       <main className="flex justify-center px-5 pt-12 pb-20 sm:px-8 lg:pt-16">
