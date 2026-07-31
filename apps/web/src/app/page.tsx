@@ -432,17 +432,18 @@ export default function LandingPage() {
         edge, so dropping a 520px block in later would move them. Holding the
         space keeps that layout settled.
 
-        Sized on aspect ratio rather than a fixed height so it can't letterbox a
-        real 16:10 capture, and capped at 1120px because a dashboard screenshot
-        stretched past that stops being readable at the density it was taken.
-        Swap `ProductShot` for an <Image> when the capture lands — nothing else
-        here needs to change.
+        The frame takes its ratio from the capture itself (1348×598 → 2.25),
+        rather than the 16:10 this slot assumed before the real screenshot
+        existed. Forcing 16:10 would have letterboxed it top and bottom.
+        Capped at 1120px because a dashboard stretched past that stops being
+        readable at the density it was captured.
       */}
       <section className="px-5 pt-12 sm:px-12 sm:pt-16">
         <FadeIn whenInView delay={0.05} className="mx-auto w-full max-w-[1120px]">
           <ProductShot
-            label="product shot — dashboard, 1440×900"
-            className="aspect-[16/10] w-full shadow-[0_28px_70px_-40px_rgba(11,18,32,0.35)]"
+            shot="dashboard"
+            priority
+            className="w-full shadow-[0_28px_70px_-40px_rgba(11,18,32,0.35)]"
           />
         </FadeIn>
       </section>
@@ -594,8 +595,14 @@ export default function LandingPage() {
           </p>
         </FadeIn>
 
+        {/*
+          The left column was a fixed 480px against a 400px-tall placeholder —
+          a 1.2 ratio that nothing about the real capture (1012×569, so 1.78)
+          matched. Now the column sets the width and the image sets its own
+          height, which at 480px comes out around 270px.
+        */}
         <div className="mt-10 grid items-center gap-10 lg:grid-cols-[480px_minmax(0,1fr)] lg:gap-14">
-          <ProductShot label="product shot — audit findings, 960×800" className="h-[400px]" />
+          <ProductShot shot="auditFindings" sizes="(max-width: 1024px) 100vw, 480px" />
 
           <Stagger className="flex flex-col gap-1">
             {STEPS.map((step, index) => (
@@ -698,9 +705,20 @@ export default function LandingPage() {
                 </div>
               </div>
 
+              {/*
+                The wide strip (1268×303) suits this footer slot — it's the
+                one capture short enough to sit under a header block without
+                dominating the card.
+
+                `mt-auto` instead of the old `flex-1`: flex-1 would stretch the
+                frame to fill leftover column height and fight the aspect
+                ratio, squashing the screenshot whenever the neighbouring card
+                ran taller. This pins it to the bottom at its true shape.
+              */}
               <ProductShot
-                label="product shot — audit findings"
-                className="min-h-[210px] flex-1 rounded-none border-0 border-t border-[#EDEFF3]"
+                shot="auditFindingsStrip"
+                sizes="(max-width: 768px) 100vw, 66vw"
+                className="mt-auto rounded-none border-0 border-t border-[#EDEFF3]"
               />
             </div>
           </StaggerItem>
