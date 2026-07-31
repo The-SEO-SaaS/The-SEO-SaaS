@@ -51,8 +51,16 @@ export interface PlanDefinition {
  */
 export const YEARLY_MONTHS = 10;
 
+/**
+ * Ten months, floored to a whole dollar.
+ *
+ * `19.99 × 10` is `199.90`, and a price ending in `.90` reads like a rounding
+ * artefact rather than a decision — which, on an annual plan, is exactly what
+ * it is. Flooring rather than rounding so the yearly price is never a cent
+ * above ten months of the monthly one.
+ */
 function yearly(monthly: number): number {
-  return Math.round(monthly * YEARLY_MONTHS * 100) / 100;
+  return Math.floor(monthly * YEARLY_MONTHS);
 }
 
 export const PLANS: Record<PlanId, PlanDefinition> = {
@@ -60,8 +68,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "STARTER",
     name: "Starter",
     tagline: "One site, getting started",
-    monthlyUsd: 49.99,
-    yearlyUsd: yearly(49.99),
+    monthlyUsd: 19.99,
+    yearlyUsd: yearly(19.99),
     highlighted: false,
     limits: {
       projects: 1,
@@ -76,8 +84,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "GROWTH",
     name: "Growth",
     tagline: "Publishing consistently",
-    monthlyUsd: 99.99,
-    yearlyUsd: yearly(99.99),
+    monthlyUsd: 49.99,
+    yearlyUsd: yearly(49.99),
     highlighted: true,
     limits: {
       projects: 3,
@@ -92,8 +100,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: "SCALE",
     name: "Scale",
     tagline: "Multiple sites, serious volume",
-    monthlyUsd: 199.99,
-    yearlyUsd: yearly(199.99),
+    monthlyUsd: 119.99,
+    yearlyUsd: yearly(119.99),
     highlighted: false,
     limits: {
       projects: 10,
@@ -129,9 +137,14 @@ export function yearlySavingsFor(planId: PlanId): number {
   return Math.round((plan.monthlyUsd * 12 - plan.yearlyUsd) * 100) / 100;
 }
 
-/** `$49.99`, `$499.90` — one formatter so pages can't disagree on decimals. */
+/**
+ * `$19.99`, `$199` — one formatter so pages can't disagree on decimals.
+ *
+ * Whole amounts drop the decimals entirely. `$199.00` on an annual plan looks
+ * like a number that was calculated at you; `$199` looks like a price.
+ */
 export function formatPrice(usd: number): string {
-  return `$${usd.toFixed(2)}`;
+  return Number.isInteger(usd) ? `$${usd}` : `$${usd.toFixed(2)}`;
 }
 
 // --- Feature copy ------------------------------------------------------------

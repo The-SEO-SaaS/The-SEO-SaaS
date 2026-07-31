@@ -347,7 +347,7 @@ export function UnlockSection({
             </div>
             <p className="text-ink-500 max-w-[60ch] text-sm leading-relaxed">
               A plan unlocks the full list for {domain}, the complete competitor breakdown, and
-              article drafts generated from every gap above. From $49.99 a month.
+              article drafts generated from every gap above. From $19.99 a month.
             </p>
           </div>
 

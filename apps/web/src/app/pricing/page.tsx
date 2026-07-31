@@ -10,7 +10,7 @@ import { PricingTable } from "@/components/marketing/pricing-table";
 export const metadata: Metadata = {
   title: "Pricing — TheSEOSaaS",
   description:
-    "Every plan includes every feature. Pick the limits that match how much you plan to publish. From $49.99 a month, cancel any time.",
+    "Every plan includes every feature. Pick the limits that match how much you plan to publish. From $19.99 a month, cancel any time.",
 };
 
 /**
