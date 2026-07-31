@@ -51,6 +51,25 @@ export async function GET(request: NextRequest) {
       userAgent: await userAgent(),
     });
 
+    /**
+     * Carry a free audit into the new account.
+     *
+     * Without this, someone who runs an audit, leaves their address at the
+     * gate, then signs in through the header rather than the report's claim
+     * button arrives at onboarding with an empty domain field — the site they
+     * just watched us crawl simply isn't there, and step 1 asks them to type it
+     * again. The design's own copy ("we crawled this one for your free audit,
+     * so the findings carry over") promises otherwise.
+     *
+     * Never allowed to break sign-in: a failure here costs a prefilled field,
+     * while throwing would cost the user their session.
+     */
+    await auth
+      .claimLatestAuditForEmail(result.user.id, result.user.email)
+      .catch((error: unknown) => {
+        console.error("[auth] could not adopt a prior audit on sign-in:", error);
+      });
+
     // New users go to onboarding; returning users go where they were headed.
     const destination = result.isNewUser
       ? "/onboarding"

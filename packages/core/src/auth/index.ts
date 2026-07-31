@@ -47,5 +47,6 @@ export {
   updateProfile,
   claimAudit,
   claimAuditByPublicId,
+  claimLatestAuditForEmail,
   type AuthResult,
 } from "./service.ts";

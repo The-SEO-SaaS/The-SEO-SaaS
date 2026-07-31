@@ -177,6 +177,47 @@ export async function claimAudit(
  * has no business depending on @theseosaas/db, and the one route that did was
  * the reason a production build couldn't resolve it.
  */
+/**
+ * Adopts the most recent unclaimed audit that was run under this email.
+ *
+ * Sign-in is where the anonymous funnel and the account meet, and the explicit
+ * hand-off — the "claim this report" button — only fires when someone returns
+ * to the report and clicks it. Anyone who runs an audit, leaves their address
+ * at the gate, and then signs in through the header instead lands on
+ * onboarding with an empty domain field and no idea why the site they just had
+ * crawled isn't there.
+ *
+ * `leadEmail` is a deliberate signal, not a guess: the user typed that address
+ * into our own form, for that specific audit. Matching on it is the same
+ * evidence the explicit claim uses, arriving by a different route.
+ *
+ * Deliberately narrow — audits already owned by someone are skipped by the
+ * `userId: null` filter, and `claimAudit` re-checks ownership anyway, so this
+ * can't pull a report into the wrong account.
+ *
+ * Returns null when there's nothing to adopt, which is the common case and not
+ * an error.
+ */
+export async function claimLatestAuditForEmail(
+  userId: string,
+  email: string,
+): Promise<{ projectId: string } | null> {
+  const audit = await prisma.audit.findFirst({
+    where: {
+      leadEmail: { equals: email, mode: "insensitive" },
+      status: "COMPLETED",
+      userId: null,
+      projectId: null,
+    },
+    orderBy: { completedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (!audit) return null;
+
+  return claimAudit(audit.id, userId);
+}
+
 export async function claimAuditByPublicId(
   publicId: string,
   userId: string,

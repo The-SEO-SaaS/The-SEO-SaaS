@@ -1,7 +1,9 @@
 import prisma from "@theseosaas/db";
+import { env } from "@theseosaas/env/server";
 import { z } from "zod";
 
 import { AppError } from "../errors.ts";
+import { sendAuditReadyEmail } from "../mail/index.ts";
 import { enqueue, JOB_TYPES } from "../queue/index.ts";
 import { consumeRateLimit } from "../ratelimit.ts";
 import { normalizeDomain } from "../util/domain.ts";
@@ -28,6 +30,16 @@ const RATE_LIMIT_PER_DOMAIN = { limit: 3, windowMs: 1000 * 60 * 60 * 24 };
 
 /** How long a completed audit is reused instead of re-run. */
 const REUSE_WINDOW_MS = 1000 * 60 * 60 * 24;
+
+/**
+ * After this long, an audit still marked QUEUED or RUNNING is presumed dead.
+ *
+ * Twenty minutes: comfortably past the slowest real run (the UI promises six to
+ * eight, a 50-page site with slow model calls has taken twelve), and short
+ * enough that a user who hit a crashed worker can simply try again rather than
+ * being told their own domain is already busy.
+ */
+const ABANDONED_AFTER_MS = 1000 * 60 * 20;
 
 export interface StartAuditResult {
   id: string;
@@ -69,10 +81,28 @@ export async function startAudit(
     return { ...recent, domain, reused: true };
   }
 
-  // An audit already running for this domain — return it instead of starting
-  // a duplicate. Guards the double-submit case.
+  /**
+   * An audit already running for this domain — return it instead of starting a
+   * duplicate. Guards the double-submit case.
+   *
+   * The `createdAt` bound is the important part. Without it, any audit that
+   * ever got stuck in RUNNING — a worker killed mid-job, a job that exhausted
+   * its retries, a process that lost the database — poisoned that domain
+   * permanently. Every subsequent submit found the dead row, returned it as
+   * "already in flight", and enqueued nothing. The worker sat idle with an
+   * empty queue while the crawl screen polled a corpse forever, which is
+   * exactly the "stuck at Checking technical SEO" symptom: the pipeline was
+   * fine, nothing was ever asked to run it again.
+   *
+   * ABANDONED_AFTER_MS is generously past the slowest real audit, so a genuine
+   * double-submit still de-duplicates.
+   */
   const inFlight = await prisma.audit.findFirst({
-    where: { domain, status: { in: ["QUEUED", "RUNNING"] } },
+    where: {
+      domain,
+      status: { in: ["QUEUED", "RUNNING"] },
+      createdAt: { gt: new Date(Date.now() - ABANDONED_AFTER_MS) },
+    },
     orderBy: { createdAt: "desc" },
     select: { id: true, publicId: true, status: true },
   });
@@ -80,6 +110,25 @@ export async function startAudit(
   if (inFlight) {
     return { ...inFlight, domain, reused: true };
   }
+
+  // Anything older is not coming back. Retire it so it stops being found, and
+  // so the report page shows an honest failure rather than a spinner, then fall
+  // through and start a fresh run.
+  await prisma.audit
+    .updateMany({
+      where: {
+        domain,
+        status: { in: ["QUEUED", "RUNNING"] },
+        createdAt: { lte: new Date(Date.now() - ABANDONED_AFTER_MS) },
+      },
+      data: {
+        status: "FAILED",
+        currentStep: null,
+        summary: "This run was interrupted and never finished. Starting a new one.",
+        completedAt: new Date(),
+      },
+    })
+    .catch(() => {});
 
   await consumeRateLimit(
     `audit:domain:${domain}`,
@@ -120,10 +169,51 @@ export async function getAuditProgress(publicId: string) {
       currentStep: true,
       progress: true,
       summary: true,
+      createdAt: true,
     },
   });
 
   if (!audit) throw AppError.notFound("We couldn't find that audit.");
+
+  /**
+   * Retire a run that was never going to finish.
+   *
+   * The crawl screen polls until it sees COMPLETED or FAILED, so an audit
+   * abandoned by a dead worker left it spinning indefinitely — no error, no
+   * retry, just a progress bar frozen mid-step. Deciding that here rather than
+   * only in `startAudit` matters because the person watching this screen isn't
+   * the person who will next submit the domain; they need an answer now.
+   *
+   * Written back, not just reported, so the row stops being resurrected on the
+   * next poll and so `startAudit` sees a terminal state.
+   */
+  const abandoned =
+    (audit.status === "QUEUED" || audit.status === "RUNNING") &&
+    audit.createdAt.getTime() < Date.now() - ABANDONED_AFTER_MS;
+
+  if (abandoned) {
+    const summary =
+      "This run was interrupted before it finished. Run the audit again — it usually works on a second attempt.";
+
+    await prisma.audit
+      .updateMany({
+        // Re-checking status guards the race where a worker picked the job back
+        // up between the read above and this write.
+        where: { id: audit.id, status: { in: ["QUEUED", "RUNNING"] } },
+        data: { status: "FAILED", currentStep: null, summary, completedAt: new Date() },
+      })
+      .catch(() => {});
+
+    return {
+      id: audit.id,
+      publicId: audit.publicId,
+      domain: audit.domain,
+      status: "FAILED" as const,
+      currentStep: null,
+      progress: audit.progress,
+      error: summary,
+    };
+  }
 
   return {
     id: audit.id,
@@ -344,6 +434,25 @@ export const captureLeadSchema = z.object({ email: emailSchema });
 /**
  * The soft email gate. Idempotent, and never blocks report access — the user
  * is always free to skip.
+ *
+ * One endpoint serves two moments, which is why it has to handle both:
+ *
+ *   - **During the crawl.** The card on the progress screen says "leave an
+ *     email and you can close the tab". The address is recorded as
+ *     `notifyEmail` and the pipeline mails the link the moment the run
+ *     finishes (`notifyIfRequested`).
+ *   - **After the crawl.** The gate before the report. The audit is already
+ *     COMPLETED, so there's no later moment to hook into — the mail goes out
+ *     here, immediately.
+ *
+ * Both wrote `leadEmail` and stopped, which meant the app collected addresses
+ * and promised a link it never sent. `notifyEmail` was only ever populated by
+ * the signed-in onboarding path, so the entire anonymous funnel — the one the
+ * marketing page drives every visitor into — silently dropped its email.
+ *
+ * `leadEmail` is still written in both cases: it's the marketing capture, and
+ * distinct from `notifyEmail`, which is a one-off delivery that gets cleared
+ * once sent.
  */
 export async function captureAuditLead(
   publicId: string,
@@ -351,10 +460,66 @@ export async function captureAuditLead(
 ): Promise<void> {
   const { email } = captureLeadSchema.parse(input);
 
-  const { count } = await prisma.audit.updateMany({
+  const audit = await prisma.audit.findUnique({
     where: { publicId },
-    data: { leadEmail: email },
+    select: {
+      id: true,
+      publicId: true,
+      domain: true,
+      status: true,
+      score: true,
+      summary: true,
+      notifiedAt: true,
+    },
   });
 
-  if (count === 0) throw AppError.notFound("We couldn't find that audit.");
+  if (!audit) throw AppError.notFound("We couldn't find that audit.");
+
+  await prisma.audit.update({
+    where: { id: audit.id },
+    data: {
+      leadEmail: email,
+      // Only meaningful while the run is still going; harmless afterwards, and
+      // it means a retried job can still deliver if the send below fails.
+      ...(audit.status === "COMPLETED" ? {} : { notifyEmail: email }),
+    },
+  });
+
+  // Still running: the pipeline owns delivery from here.
+  if (audit.status !== "COMPLETED") return;
+
+  // Already mailed — a second submit at the gate shouldn't send a duplicate.
+  if (audit.notifiedAt) return;
+
+  // Claim the send before performing it, conditioned on `notifiedAt` still
+  // being null. Two tabs submitting the same address at the same moment is
+  // otherwise two identical emails.
+  const claimed = await prisma.audit.updateMany({
+    where: { id: audit.id, notifiedAt: null },
+    data: { notifiedAt: new Date() },
+  });
+
+  if (claimed.count === 0) return;
+
+  const appUrl = env.APP_URL.replace(/\/$/, "");
+
+  try {
+    await sendAuditReadyEmail({
+      to: email,
+      url: `${appUrl}/audit/${audit.publicId}`,
+      domain: audit.domain,
+      score: audit.score ?? 0,
+      headline: audit.summary ?? "Your audit is ready.",
+    });
+  } catch (error) {
+    // Never surface a mail failure here. The report is already on screen; the
+    // user gave an address as a convenience, and failing this request would
+    // make it look like the gate rejected them. Release the claim so a retry
+    // can still send.
+    await prisma.audit
+      .updateMany({ where: { id: audit.id }, data: { notifiedAt: null } })
+      .catch(() => {});
+
+    console.error(`[audit] could not email the report for ${audit.publicId}`, error);
+  }
 }
