@@ -1,5 +1,6 @@
 "use client";
 
+import { toParagraphs } from "@theseosaas/core/text";
 import { Button } from "@theseosaas/ui/components/button";
 import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@theseosaas/ui/components/empty";
 import { IconTile } from "@theseosaas/ui/components/icon-tile";
@@ -151,16 +152,34 @@ function VerdictSection({ dashboard }: { dashboard: SiteDashboard }) {
   const scoreChange =
     history.length >= 2 ? history[history.length - 1]!.score - history[history.length - 2]!.score : null;
 
+  // `score.verdict` is the same AI-written text as the report's own summary
+  // (see `latest?.summary` in projects/service.ts) — two or three sentences,
+  // not one. Rendered as a single block at 22-27px with a 30ch cap, it turned
+  // into a tall, dense wall next to the score card. Only the opening sentence
+  // keeps the headline treatment; anything after it reads as normal body copy,
+  // the same demotion the report header gives its own opening paragraph.
+  const verdictParagraphs = toParagraphs(
+    score.verdict ?? "Your audit finished — the score and findings are ready below.",
+  );
+
   return (
     <FadeIn className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-10">
       <div className="min-w-0">
         <Eyebrow>Latest audit</Eyebrow>
-        <p className="mt-3.5 max-w-[30ch] text-[22px] leading-[1.3] font-medium tracking-[-0.02em] text-pretty text-[#0B1220] sm:text-[27px]">
-          <HighlightRivals
-            text={score.verdict ?? "Your audit finished — the score and findings are ready below."}
-            competitors={competitors}
-          />
-        </p>
+        <div className="mt-3.5 max-w-[46ch] space-y-2.5">
+          {verdictParagraphs.map((paragraph, index) => (
+            <p
+              key={index}
+              className={
+                index === 0
+                  ? "text-[22px] leading-[1.3] font-medium tracking-[-0.02em] text-pretty text-[#0B1220] sm:text-[27px]"
+                  : "text-[14.5px] leading-[1.6] text-[#5B6472]"
+              }
+            >
+              <HighlightRivals text={paragraph} competitors={competitors} />
+            </p>
+          ))}
+        </div>
         {dashboard.nextAction ? (
           <p className="mt-3 max-w-[52ch] text-[14px] leading-[1.6] text-[#6B7480]">
             {dashboard.nextAction.rationale}
