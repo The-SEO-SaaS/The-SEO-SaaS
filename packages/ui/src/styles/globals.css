@@ -234,11 +234,23 @@
     @apply font-display tracking-tight;
   }
 
-  a {
+  /*
+     Prose links. Explicitly excluded: anchors that are really buttons.
+     `<Button render={<Link/>}>` produces an <a> carrying the button's own
+     classes, and `a:hover` (0,1,1) outranks a plain `.text-white` utility
+     (0,1,0) — so the ink CTA in the audit header kept its dark fill while its
+     label turned dark ink on hover, and gained an underline. Invisible text on
+     a button, everywhere a Button renders as a link.
+
+     Fixed at the source rather than by bolting `hover:text-white
+     hover:no-underline` onto each call site, which is how this drifts: the
+     next Button-as-Link would be broken again and nobody would know why.
+  */
+  a:not([data-slot="button"]) {
     @apply text-ink-900 font-medium no-underline;
   }
 
-  a:hover {
+  a:not([data-slot="button"]):hover {
     @apply text-ink-700 underline;
   }
 }
