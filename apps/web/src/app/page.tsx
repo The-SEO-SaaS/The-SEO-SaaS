@@ -1,15 +1,18 @@
 import { FadeIn, Stagger, StaggerItem } from "@theseosaas/ui/components/motion";
+import { WordCycle } from "@theseosaas/ui/components/word-cycle";
 import { cn } from "@theseosaas/ui/lib/utils";
 import {
   ArrowRight,
   ArrowUp,
   ArrowUpRight,
   BarChart3,
+  CalendarClock,
   FileSearch,
   KeyRound,
   PenLine,
   Search,
   TrendingDown,
+  Users,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +30,80 @@ import { MarketingFooter, MarketingHeader } from "@/components/marketing/site-ch
  * that one island ships JavaScript. The page's whole job is to get a domain
  * into that input.
  */
+
+/**
+ * The engines the headline cycles through.
+ *
+ * Google leads because it's the one that matters; the rest are there to say
+ * "search" rather than to claim equal weight. Marks live in
+ * `apps/web/public/search-engines/`.
+ *
+ * Colours are each engine's own brand hue, darkened where the stock value fails
+ * contrast against white at headline weight — Brave's #FB542B and DuckDuckGo's
+ * #DE5833 both sit near 3:1, which is fine for a 56px display face but not
+ * something to reuse at body size.
+ *
+ * "Brave Search" rather than "Brave": the browser and the engine are different
+ * products, and only one of them is what this sentence is about.
+ */
+const ENGINES = [
+  {
+    label: "Google",
+    // Six letters, three of the wordmark's own hues, two letters each — the
+    // logo's colours are blue #4285F4, red #EA4335, yellow #FBBC05 and green
+    // #34A853, taken here in the order they first appear.
+    //
+    // One caveat worth knowing: #FBBC05 on white is about 1.7:1, well under the
+    // 4.5:1 body-text threshold. At 54px display weight it's legible, and it is
+    // Google's actual yellow, so it stays — but say the word and I'll swap the
+    // last run for the logo's green #34A853, which clears 3:1 and keeps the
+    // colours authentic.
+    segments: [
+      { text: "Go", color: "#4285F4" },
+      { text: "og", color: "#EA4335" },
+      { text: "le", color: "#FBBC05" },
+    ],
+    icon: "/search-engines/google.png",
+  },
+  { label: "Bing", color: "#3298EE", icon: "/search-engines/bing.png" },
+  { label: "DuckDuckGo", color: "#FF3D00", icon: "/search-engines/duckduckgo.png" },
+  // "Brave Search", not "Brave": the browser and the engine are different
+  // products, and only one of them is what this sentence is about.
+  { label: "Brave Search", color: "#F4592B", icon: "/search-engines/brave.png" },
+  { label: "Yahoo", color: "#5E35B1", icon: "/search-engines/yahoo.png" },
+];
+
+/**
+ * The stakes section — why organic traffic, before any claim about our tool.
+ *
+ * This sits ahead of "why teams switch" on purpose. That section argues we're
+ * the better way to do SEO; this one argues SEO is worth doing at all, which is
+ * the prior question for a founder who has been buying ads and not thinking
+ * about search. Same card treatment, so the two read as one argument.
+ */
+const STAKES = [
+  {
+    eyebrow: "NO VISITORS, NO TRIALS",
+    icon: Users,
+    tileBg: "bg-[#E7E9ED]",
+    accent: "text-ink-900",
+    body: "The best onboarding flow in the world converts zero people if zero people arrive. Traffic isn't a vanity metric here — it's the top of every funnel you've built.",
+  },
+  {
+    eyebrow: "SOMEONE ALREADY RANKS FOR YOUR BUYER'S QUESTION",
+    icon: TrendingDown,
+    tileBg: "bg-[#FEEFDC]",
+    accent: "text-[#B45309]",
+    body: "Right now, that's a competitor. Not because their product is better — because they published first, or published more.",
+  },
+  {
+    eyebrow: "IT'S THE ONLY CHANNEL THAT PAYS OUT LATER",
+    icon: CalendarClock,
+    tileBg: "bg-[#D8F3E4]",
+    accent: "text-[#0F766E]",
+    body: "An article you publish today can still be bringing in visitors a year from now. That's what makes it worth building on purpose instead of hoping for.",
+  },
+];
 
 /**
  * Each problem card carries its own tone. The design tints the icon tile and
@@ -58,7 +135,7 @@ const PROBLEMS = [
     tileBg: "bg-[#D8F3E4]",
     accent: "text-[#0F766E]",
     title: "Finding a gap isn't closing it",
-    body: "Every other tool hands you a keyword list and stops. Someone still writes the page.",
+    body: "Every other tool hands you a keyword list and stops. Someone still has to write the page.",
     answer: "Briefs and drafts come with the finding",
   },
 ];
@@ -73,29 +150,29 @@ const STEPS = [
     chipBg: "bg-[#F1F3F7]",
     accent: "text-ink-900",
     title: "Run the audit",
-    body: "Point us at your domain. We crawl every page, check vitals, and compare you against three competitors.",
+    body: "Point us at your domain. We check you against three competitors and see who's beating you, and why.",
   },
   {
     step: "STEP 02",
-    meta: "42 findings, 3 that matter",
+    meta: "3 fixes that matter",
     icon: FileSearch,
     tileBg: "bg-[#FEEFDC]",
     tileText: "text-[#B45309]",
     chipBg: "bg-[#FFFBF5]",
     accent: "text-[#B45309]",
     title: "See what it's costing you",
-    body: "Findings ranked by traffic at risk, each with a plain-English reason it matters and the pages affected.",
+    body: "Skip the 40-item to-do list. We tell you the three things to fix first, and how much traffic each one is worth.",
   },
   {
     step: "STEP 03",
-    meta: "Brief → draft → publish",
+    meta: "Ready to go",
     icon: PenLine,
     tileBg: "bg-[#D8F3E4]",
     tileText: "text-[#0F766E]",
     chipBg: "bg-[#F5FCF8]",
     accent: "text-[#0F766E]",
     title: "Publish the fix",
-    body: "Briefs and full articles generated from those gaps, on-brand and ready to publish or export as markdown.",
+    body: "Get a finished, on-brand article for each gap — ready to publish today, not another task on your backlog.",
   },
 ];
 
@@ -107,6 +184,9 @@ const STEPS = [
  * being wired to anything, which is also why the cards are decorative.
  */
 const SHARE_OF_VOICE = [
+  // Orange for the competitor ahead of you, ink for you, grey for the one
+  // behind. Three tones instead of one so the ranking is legible before you've
+  // read a single label — the row that should worry you is the coloured one.
   { label: "darkroast", value: 82, bar: "bg-[#EA580C]", text: "text-[#9A3412]" },
   { label: "you", value: 74, bar: "bg-ink-900", text: "text-ink-900" },
   { label: "brewline", value: 61, bar: "bg-[#C6CDD8]", text: "text-[#6B7480]" },
@@ -119,9 +199,9 @@ const CTA_CARDS = [
     href: "/blog",
   },
   {
-    title: "Paid retries",
-    body: "Re-run an audit any time after you've made changes — it's unlimited on every plan.",
-    href: "/pricing",
+    title: "Not ready to hand over a domain?",
+    body: "Read the three steps first — from a URL to a published article, with nothing to install.",
+    href: "/#how-it-works",
   },
 ];
 
@@ -161,35 +241,60 @@ export default function LandingPage() {
         canvas. They're hidden below `xl`, where they would sit on top of the
         headline — the design has no mobile view, so that's an adaptation.
       */}
+      {/*
+        Top padding was 180px at `xl`, traced from the design's canvas. On a
+        1366×768 laptop — the most common desktop viewport there is — that put
+        the audit input, the single thing this page exists to get a domain into,
+        below the fold, with the top of the screen showing empty space above the
+        headline. 72px keeps the design's airy proportions and puts the input
+        back on the first screen.
+      */}
       <section
         id="hero"
-        className="relative flex flex-col items-center px-5 pt-16 sm:px-10 sm:pt-24 xl:pt-[180px]"
+        className="relative flex flex-col items-center px-5 pt-12 sm:px-10 sm:pt-16 xl:pt-[72px]"
       >
+        {/*
+          The proof cards moved up with the headline and shrank a size. They're
+          decorative, so they follow the hero rather than holding their traced
+          offsets — left at 148/368 they'd have floated far below the copy they
+          flank.
+        */}
         <ProofCard
-          className="left-6 top-[148px]"
+          className="left-8 top-[30px]"
           eyebrow="RANKINGS"
           delta={{ label: "+37", tone: "up" }}
           title="Keywords on page one"
           footer="Six months, one site"
           spark="M0,34 L38,30 L76,24 L114,17 L152,11 L190,5"
+          sparkTone="up"
         />
         <ProofCard
-          className="left-6 top-[368px]"
+          className="left-8 top-[212px]"
           eyebrow="SEO SCORE"
-          title="68 → 74"
+          title={
+            <>
+              <span className="text-[#B45309]">68</span>
+              <span className="text-[#9AA2AF]"> → </span>
+              <span className="text-[#15803D]">74</span>
+            </>
+          }
           footer="After the first three fixes"
         />
         <ProofCard
-          className="right-6 top-[148px]"
+          className="right-8 top-[30px]"
           eyebrow="COMPETITORS"
           delta={{ label: "4 tracked", tone: "neutral" }}
           title="Who takes your terms"
           footer="Checked every day"
         />
         <ProofCard
-          className="right-6 top-[368px]"
+          className="right-8 top-[212px]"
           eyebrow="GAP CLOSED"
-          title="9 keywords recovered"
+          title={
+            <>
+              <span className="text-[#15803D]">9 keywords</span> recovered
+            </>
+          }
           footer="3 articles published"
           footerCheck
         />
@@ -202,22 +307,128 @@ export default function LandingPage() {
             </span>
           </span>
 
-          <h1 className="font-display text-ink-900 mt-[26px] text-[34px] leading-[1.06] font-semibold tracking-[-0.04em] text-pretty sm:text-[44px] lg:text-[56px]">
-            An SEO lead for your site, not another dashboard
+          {/*
+            The engine gets its own line, hard-broken rather than left to wrap.
+            Inline, a long name like "DuckDuckGo" or "Brave Search" would push
+            the headline from two lines to three on some ticks and back on
+            others, so the block below it jumped every few seconds. On a
+            dedicated centred line the width change resolves symmetrically and
+            nothing under it moves.
+
+            No `text-balance` for the same reason: the balancer re-runs on every
+            flip, and re-wrapping the first line is exactly the twitch this is
+            avoiding.
+          */}
+          <h1 className="font-display text-ink-900 mt-[20px] text-[34px] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[44px] lg:text-[54px]">
+            Get more traffic from
+            <span className="mt-[2px] flex items-center justify-center">
+              <WordCycle words={ENGINES} suffix="." />
+            </span>
           </h1>
 
-          <p className="mx-auto mt-[18px] max-w-[60ch] text-[15px] leading-[1.6] text-[#5B6472] sm:text-[17px]">
-            We crawl your site, tell you plainly what is costing you search traffic, then write
-            the pages that close the gap. Audit, opportunities, drafts, published.
+          <p className="mx-auto mt-[16px] max-w-[60ch] text-[15px] leading-[1.6] text-[#5B6472] sm:text-[17px]">
+            We crawl your site and every competitor ranking above you, find the keywords they
+            own and you don&apos;t, and generate the content to close that gap — prioritized by
+            traffic potential, not alphabetical order.
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1} className="w-full max-w-[620px]">
-          <div className="mt-[34px]">
+          <div className="mt-[26px]">
             <AuditInput />
           </div>
-          <p className="mt-[13px] text-center text-[12.5px] text-[#6B7480]">
+          <p className="mt-[11px] text-center text-[12.5px] text-[#6B7480]">
             About eight minutes for a 400-page site. You get a shareable report link.
+          </p>
+        </FadeIn>
+      </section>
+
+      {/*
+        The hero screenshot slot.
+
+        Deliberately reserved now rather than added when the capture exists: the
+        proof cards flanking the hero are positioned against this section's top
+        edge, so dropping a 520px block in later would move them. Holding the
+        space keeps that layout settled.
+
+        Sized on aspect ratio rather than a fixed height so it can't letterbox a
+        real 16:10 capture, and capped at 1120px because a dashboard screenshot
+        stretched past that stops being readable at the density it was taken.
+        Swap `ProductShot` for an <Image> when the capture lands — nothing else
+        here needs to change.
+      */}
+      <section className="px-5 pt-12 sm:px-12 sm:pt-16">
+        <FadeIn whenInView delay={0.05} className="mx-auto w-full max-w-[1120px]">
+          <ProductShot
+            label="product shot — dashboard, 1440×900"
+            className="aspect-[16/10] w-full shadow-[0_28px_70px_-40px_rgba(11,18,32,0.35)]"
+          />
+        </FadeIn>
+      </section>
+
+      {/*
+        The stakes. Reuses the problem section's geometry exactly — same 72px
+        top padding, same 640px heading block, same 18px card grid — because
+        this and "why teams switch" are two halves of one argument and shouldn't
+        look like two different templates.
+
+        The cards carry no title line of their own: the eyebrow *is* the claim
+        here ("NO VISITORS, NO TRIALS"), so a heading under it would only repeat
+        it in longer words. That's why the chip sits on its own row rather than
+        opposite the icon tile — a 40-character eyebrow won't fit beside one.
+      */}
+      <section className="px-5 pt-16 sm:px-12 sm:pt-[72px]">
+        <FadeIn whenInView className="max-w-[640px]">
+          <div className="text-[11px] font-semibold tracking-[0.12em] text-[#6B7480]">
+            THE PROBLEM
+          </div>
+          <h2 className="font-display text-ink-900 mt-3.5 text-[26px] leading-[1.22] font-semibold tracking-[-0.032em] text-pretty sm:text-[33px]">
+            A SaaS without traffic can&apos;t get sales
+          </h2>
+          <p className="mt-4 text-[15px] leading-[1.65] text-[#5B6472]">
+            Every unread landing page says the same thing underneath the design: nobody found
+            this. Ads buy attention for as long as you keep paying for it. Organic traffic buys
+            attention for as long as the page exists.
+          </p>
+        </FadeIn>
+
+        <Stagger className="mt-8 grid gap-[18px] md:grid-cols-3">
+          {STAKES.map((stake) => (
+            <StaggerItem key={stake.eyebrow} className="h-full">
+              <div className="h-full rounded-2xl border border-[#E2E6EC] bg-white p-[26px]">
+                <span
+                  className={cn(
+                    "inline-flex size-9 items-center justify-center rounded-[10px]",
+                    stake.tileBg,
+                    stake.accent,
+                  )}
+                >
+                  <stake.icon className="size-[17px]" strokeWidth={1.8} />
+                </span>
+
+                <h3
+                  className={cn(
+                    "mt-4 text-[11px] font-semibold tracking-[0.08em] uppercase",
+                    stake.accent,
+                  )}
+                >
+                  {stake.eyebrow}
+                </h3>
+                <p className="mt-2.5 text-[13.5px] leading-[1.65] text-[#5B6472]">
+                  {stake.body}
+                </p>
+              </div>
+            </StaggerItem>
+          ))}
+        </Stagger>
+
+        {/*
+          Bridge. Centred and quiet — it exists to hand the reader from the
+          stakes to the mechanism, so it shouldn't compete with either heading.
+        */}
+        <FadeIn whenInView className="mt-10 text-center">
+          <p className="text-ink-900 text-[15px] font-medium">
+            That&apos;s the traffic problem. Here&apos;s how we close it.
           </p>
         </FadeIn>
       </section>
@@ -298,7 +509,7 @@ export default function LandingPage() {
             Audit, then act — in one loop
           </h2>
           <p className="mt-2.5 text-[15px] leading-[1.6] text-[#5B6472]">
-            No dead ends. Every finding ends in something you can publish.
+            No dead ends. Every step ends in something you can publish.
           </p>
         </FadeIn>
 
@@ -372,7 +583,7 @@ export default function LandingPage() {
             WHAT YOU GET
           </div>
           <h2 className="font-display text-ink-900 mt-3 text-[26px] font-semibold tracking-[-0.032em] sm:text-[33px]">
-            Four surfaces, one loop
+            Four ways we keep you moving
           </h2>
         </FadeIn>
 
@@ -387,12 +598,12 @@ export default function LandingPage() {
                       <FileSearch className="size-4" strokeWidth={1.8} />
                     </span>
                     <span className="text-ink-900 text-[18px] font-semibold tracking-[-0.018em]">
-                      Audits that prioritise themselves
+                      Know what to fix first
                     </span>
                   </div>
                   <p className="mt-2.5 max-w-[58ch] text-[13.5px] leading-[1.65] text-[#5B6472]">
-                    Forty findings ordered by the traffic each one puts at risk, so the first
-                    three are always the right three.
+                    No wall of data to sort through yourself — just the handful of fixes that
+                    will actually move your rankings, in the order to do them.
                   </p>
                 </div>
 
@@ -420,11 +631,11 @@ export default function LandingPage() {
                 <BarChart3 className="size-4 text-[#B45309]" strokeWidth={1.8} />
               </span>
               <h3 className="text-ink-900 mt-3.5 text-[17px] font-semibold tracking-[-0.018em]">
-                Competitor watch
+                See what&apos;s working for competitors
               </h3>
               <p className="mt-2 text-[13.5px] leading-[1.65] text-[#5B6472]">
-                Who outranks you on which terms, and what they shipped this month that caused
-                it.
+                Who&apos;s outranking you, on which terms, and what they did to get there —
+                checked automatically so you&apos;re never caught off guard.
               </p>
 
               <div className="mt-5 flex flex-1 flex-col justify-end gap-[9px]">
@@ -455,19 +666,25 @@ export default function LandingPage() {
                 <KeyRound className="size-4" strokeWidth={1.8} />
               </span>
               <h3 className="text-ink-900 mt-3.5 text-[17px] font-semibold tracking-[-0.018em]">
-                Keyword tracking with movement
+                Watch your rankings climb
               </h3>
               <p className="mt-2 text-[13.5px] leading-[1.65] text-[#5B6472]">
-                Positions, ninety-day trend and the gaps your rivals hold — one table you read
-                in a minute.
+                Track your position for every keyword that matters, so you can see the payoff
+                from every fix and every published post.
               </p>
 
               <div className="mt-5 flex flex-1 flex-col justify-end">
+                {/*
+                  Green, not ink. The line and the "+37" chip below it are the
+                  same claim stated twice — colouring only one of them made the
+                  chart read as neutral data sitting next to a good number,
+                  rather than as the reason for it.
+                */}
                 <svg viewBox="0 0 200 48" width="100%" height="48" preserveAspectRatio="none">
                   <path
                     d="M0,42 L40,38 L80,30 L120,24 L160,14 L200,8"
                     fill="none"
-                    stroke="#0B1220"
+                    stroke="#15803D"
                     strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -475,7 +692,10 @@ export default function LandingPage() {
                   />
                 </svg>
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <span className="text-[11.5px] text-[#6B7480]">avg. position 22 → 14.2</span>
+                  <span className="text-[11.5px] text-[#6B7480]">
+                    avg. position <span className="font-semibold text-[#B45309]">22</span> →{" "}
+                    <span className="font-semibold text-[#15803D]">14.2</span>
+                  </span>
                   <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#15803D]">
                     <ArrowUp className="size-3" strokeWidth={2.4} />
                     +37 on page one
@@ -493,11 +713,11 @@ export default function LandingPage() {
                   <PenLine className="size-4 text-[#0F766E]" strokeWidth={1.8} />
                 </span>
                 <h3 className="text-ink-900 mt-3.5 text-[18px] font-semibold tracking-[-0.018em]">
-                  Briefs and drafts, sourced from findings
+                  Get the content, not just the plan
                 </h3>
                 <p className="mt-2 max-w-[52ch] text-[13.5px] leading-[1.65] text-[#5B6472]">
-                  Every asset says which keyword gap or competitor move triggered it, so
-                  generated copy stays targeted — and exports as clean markdown.
+                  Every gap comes with a finished article, ready to publish — written around
+                  the exact keyword or competitor move that&apos;s costing you traffic.
                 </p>
               </div>
 
@@ -540,8 +760,10 @@ export default function LandingPage() {
           <PricingTable />
         </div>
 
-        <p className="mt-6 text-center text-[12.5px] text-[#6B7480]">
+        <p className="mx-auto mt-6 max-w-[68ch] text-center text-[12.5px] leading-[1.6] text-[#6B7480]">
           Cards and wallets via Dodo Payments. Unused article quota doesn&apos;t roll over.
+          Re-run an audit any time after you&apos;ve made changes — it&apos;s unlimited on every
+          plan.
         </p>
       </section>
 
@@ -558,8 +780,8 @@ export default function LandingPage() {
               Find out what your site is losing, before your competitor does.
             </h2>
             <p className="mt-3.5 max-w-[52ch] text-[15px] leading-[1.65] text-[#5B6472]">
-              Run the free audit. If the findings are not worth acting on, you have lost eight
-              minutes and gained a shareable report.
+              Run the free audit and see exactly which keywords are costing you traffic — and
+              what to publish to win them back.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3.5">

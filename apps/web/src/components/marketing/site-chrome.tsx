@@ -66,7 +66,7 @@ function useIsActive() {
  */
 export function AnnouncementBar() {
   return (
-    <div className="bg-ink-900 flex items-center justify-center gap-[9px] px-5 py-[10px] text-center sm:px-10">
+    <div className="bg-ink-900 flex items-center justify-center gap-[9px] px-5 py-[7px] text-center sm:px-10">
       <span className="size-[5px] shrink-0 rounded-full bg-[#94A3B8]" />
       <span className="text-[12.5px] text-[#D6DCE6]">
         Early access — the full audit is free while we&apos;re in beta
@@ -82,7 +82,14 @@ export function MarketingHeader() {
   return (
     <header className="bg-surface">
       <AnnouncementBar />
-      <div className="grid grid-cols-[auto_1fr] items-center gap-6 px-5 pt-[18px] pb-[20px] sm:px-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-10 md:px-10 md:pt-[21px] md:pb-[23px]">
+      {/*
+        Vertical padding is down from the traced 21/23 to 13/14, and the
+        announcement bar from 10 to 7. Together with the hero's own reduction
+        that's ~40px reclaimed above the fold — the difference between the audit
+        input being on the first screen of a 1366×768 laptop and being under it.
+        Horizontal padding and the three-column grid are the design's.
+      */}
+      <div className="grid grid-cols-[auto_1fr] items-center gap-6 px-5 pt-[12px] pb-[13px] sm:px-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-10 md:px-10 md:pt-[13px] md:pb-[14px]">
         <Link
           href="/"
           className="flex items-center gap-[9px] no-underline hover:no-underline"
