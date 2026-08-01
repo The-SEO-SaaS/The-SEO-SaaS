@@ -38,7 +38,7 @@ export function briefPrompt(input: BriefPromptInput): string {
   return [
     `Write an outline for one article that ${input.domain} should publish.`,
     "",
-    `What they sell: ${input.positioning ?? "Not established — infer it from the keyword."}`,
+    `What they sell: ${input.positioning ?? "Not established. Infer it from the keyword."}`,
     `Target keyword: ${input.targetKeyword}`,
     input.supportingKeywords.length > 0
       ? `Supporting terms to work in naturally: ${input.supportingKeywords.join(", ")}`
@@ -74,7 +74,7 @@ export interface PostPromptInput {
 
 export const POST_SYSTEM_PROMPT = `${SEO_LEAD_SYSTEM_PROMPT}
 
-You are now writing the article itself. Output GitHub-flavoured markdown and nothing else — no preamble, no explanation of what you wrote, no code fence around the whole document.
+You are now writing the article itself. Output GitHub-flavoured markdown and nothing else. No preamble, no explanation of what you wrote, and no code fence around the whole document.
 
 Formatting you may use, and nothing beyond it, because the reader pastes this straight into their own site:
 - "#" for the title, "##" for sections, "###" for sub-sections
@@ -89,7 +89,7 @@ Never use HTML, images, footnotes or nested lists.`;
 
 export function postPrompt(input: PostPromptInput): string {
   const outline = input.sections
-    .map((section, index) => `${index + 1}. ## ${section.heading} — ${section.covers}`)
+    .map((section, index) => `${index + 1}. ## ${section.heading}: ${section.covers}`)
     .join("\n");
 
   return [
@@ -112,7 +112,7 @@ export function postPrompt(input: PostPromptInput): string {
     "- Open with the reader's problem, not a definition of the keyword. Never",
     "  begin with 'In today's world' or 'When it comes to'.",
     "- Use the target keyword in the title and naturally in the body. Do not",
-    "  repeat it mechanically — write for the reader, not the crawler.",
+    "  repeat it mechanically. Write for the reader, not the crawler.",
     "- Include at least one table or one numbered procedure where the content",
     "  genuinely calls for it. Do not force either.",
     "- Never invent statistics, prices, dates, studies, customer names or",

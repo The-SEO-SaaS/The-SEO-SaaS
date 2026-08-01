@@ -421,6 +421,11 @@ export async function getAuditReport(publicId: string, viewerId?: string | null)
       issues: Math.max(0, audit.issueCount - issues.length),
       opportunities: Math.max(0, audit.opportunities.length - opportunities.length),
       keywords: Math.max(0, allKeywords.length - keywordGaps.length),
+      // Competitors were the one gated list that never said how much was
+      // being held back, so the free report looked like we'd only found three.
+      // Naming the number is the argument: "5 more" is concrete in a way that
+      // "see all competitors" isn't.
+      competitors: Math.max(0, allCompetitors.length - competitors.length),
     },
 
     isOwner,

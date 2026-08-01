@@ -28,6 +28,12 @@ export interface PageCrawl {
   h2s: string[];
 
   wordCount: number;
+  /**
+   * True when the page appears to render its content in the browser, so our
+   * server-side fetch saw a shell. `wordCount`, `h1s` and `h2s` are then
+   * measurements of our own visibility, not of the page.
+   */
+  isClientRendered: boolean;
   imageCount: number;
   imagesMissingAlt: number;
 
@@ -114,6 +120,44 @@ async function fetchText(
   }
 }
 
+/**
+ * Did this page render its content client-side?
+ *
+ * We fetch raw HTML and never execute JavaScript, so a React/Vue/Angular app
+ * that renders in the browser hands us an empty shell. Left undetected, that
+ * shell produced a cascade of confidently wrong findings: "your homepage has
+ * 5 words", "no H1", "the site is one page" — all of them artefacts of our own
+ * blind spot, stated as facts about the customer's site. That is far worse
+ * than reporting nothing, because it is checkable and wrong, and it burns the
+ * credibility of every correct finding next to it.
+ *
+ * Deliberately conservative. Requiring *both* almost no visible text and a
+ * substantial HTML payload means a genuinely thin page (a real finding we want
+ * to keep making) doesn't get excused as a rendering problem: a truly empty
+ * page is small, while a shell is large because it ships the whole bundle.
+ *
+ * The mount-point check catches the common frameworks. It's a hint, not proof,
+ * so it only counts alongside the text-to-markup ratio.
+ */
+function detectClientRendering(html: string, wordCount: number): boolean {
+  // A page with real server-rendered copy is never a false positive here.
+  if (wordCount >= 120) return false;
+
+  // A shell is mostly script. A genuinely empty page is just small.
+  if (html.length < 2000) return false;
+
+  const hasMountPoint =
+    /<div[^>]+id=["'](root|app|__next|__nuxt|q-app)["']/i.test(html) ||
+    /window\.__(NEXT|NUXT|REMIX|SVELTEKIT)_?(DATA|STATE)__/i.test(html) ||
+    /<script[^>]+id=["']__NEXT_DATA__["']/i.test(html);
+
+  const scriptCount = (html.match(/<script\b/gi) ?? []).length;
+
+  // Either a recognised framework mount, or a page that is overwhelmingly
+  // script with nothing to show for it.
+  return hasMountPoint || (scriptCount >= 3 && wordCount < 50);
+}
+
 function extractText(html: string): string {
   return html
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
@@ -173,6 +217,7 @@ function parsePage(html: string, url: string, status: number, ms: number): PageC
 
   const images = [...html.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
   const text = extractText(html);
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
   const robotsMeta = metaContent(html, "robots") ?? "";
 
   return {
@@ -183,7 +228,11 @@ function parsePage(html: string, url: string, status: number, ms: number): PageC
     canonical: canonicalMatch?.[1] ?? null,
     h1s: matchAll(html, /<h1\b[^>]*>([\s\S]*?)<\/h1>/gi),
     h2s: matchAll(html, /<h2\b[^>]*>([\s\S]*?)<\/h2>/gi).slice(0, 20),
-    wordCount: text.split(/\s+/).filter(Boolean).length,
+    wordCount,
+    // When true, every text-derived field above (wordCount, h1s, h2s) reflects
+    // what we could see, not what the page contains. Consumers must not treat
+    // them as findings — see technical.ts.
+    isClientRendered: detectClientRendering(html, wordCount),
     imageCount: images.length,
     imagesMissingAlt: images.filter((tag) => !/\balt=["'][^"']+["']/i.test(tag)).length,
     hasViewport: /<meta[^>]+name=["']viewport["']/i.test(html),

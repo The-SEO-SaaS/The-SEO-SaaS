@@ -73,7 +73,12 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     highlighted: false,
     limits: {
       projects: 1,
-      competitorsPerProject: 3,
+      // 7, not 3. Growth allows 10 per site across 3 sites, so 30 in total —
+      // against which 3 made Starter look punitive rather than entry-level,
+      // and 3 is below the number a typical audit actually surfaces, so a new
+      // customer hit the ceiling on day one. 7 covers most real competitor
+      // sets while still leaving a clear reason to move up.
+      competitorsPerProject: 7,
       trackedKeywords: 100,
       aiBlogPostsPerMonth: 5,
       aiRecommendationsPerMonth: 10,

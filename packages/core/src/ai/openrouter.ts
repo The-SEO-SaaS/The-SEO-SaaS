@@ -27,14 +27,21 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
  * all of that with no code review and no way to tell from a diff why the
  * output drifted.
  *
- * Pinned to `-5` rather than `claude-sonnet-latest`: an alias that
- * auto-follows the newest release would re-introduce exactly the silent
+ * Pinned to an exact revision rather than a `-latest` style alias: an alias
+ * that auto-follows the newest release would re-introduce exactly the silent
  * change this constant exists to prevent.
  *
- * Callers can still override per-call via `options.model`, which is how a
- * cheaper model would be used for a genuinely trivial task.
+ * Chosen for voice, not benchmarks. Side by side on real audit data this
+ * model wrote the most human summary of the ones tried — it digests crawl
+ * findings into something that reads like a person who looked at the site,
+ * rather than a report that lists what a crawler found. That is the single
+ * quality this product's output is judged on. It also happens to be far
+ * cheaper than the frontier alternatives, which matters because the free
+ * funnel audit is unmetered.
+ *
+ * Callers can still override per-call via `options.model`.
  */
-export const MODEL = "anthropic/claude-sonnet-5";
+export const MODEL = "deepseek/deepseek-v4-pro";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";

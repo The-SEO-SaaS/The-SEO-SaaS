@@ -75,6 +75,8 @@ export interface LockedCounts {
   issues: number;
   opportunities: number;
   keywords: number;
+  /** How many competitors were found beyond the three the free report shows. */
+  competitors: number;
 }
 
 export interface CompetitorSummary {

@@ -259,9 +259,48 @@ export function runTechnicalChecks(crawl: SiteCrawl): TechnicalSummary {
     });
   }
 
+  /**
+   * Pages whose text we couldn't see, because they render in the browser.
+   *
+   * Three checks read extracted text: MISSING_H1, THIN_CONTENT and
+   * SHORT_TITLE-adjacent copy rules. On a client-rendered shell all three fire
+   * on every page and produce findings that are simply false — the H1 exists,
+   * the copy exists, we just never executed the JavaScript that puts them
+   * there. Reporting those anyway is the worst kind of wrong: specific,
+   * confident, and trivially disproved by the customer opening their own site.
+   *
+   * So those checks are skipped for these pages, and the rendering itself is
+   * raised instead as a single finding below. That isn't a consolation prize:
+   * content that only exists after JavaScript runs is a genuine and serious
+   * ranking risk, and it's the actual problem worth telling them about.
+   */
+  const blindPages = crawl.pages.filter((page) => page.isClientRendered);
+  const TEXT_DERIVED = new Set(["MISSING_H1", "THIN_CONTENT"]);
+
+  if (blindPages.length > 0) {
+    issues.push({
+      code: "CLIENT_RENDERED_CONTENT",
+      severity: blindPages.length === crawl.pages.length ? "CRITICAL" : "WARNING",
+      title:
+        blindPages.length === 1
+          ? "Your page content only appears after JavaScript runs"
+          : `${blindPages.length} pages only show their content after JavaScript runs`,
+      whyItMatters:
+        "We fetched these pages the way a crawler does and got an almost empty shell. Google does render JavaScript, but it does so on a second pass that can lag by days or weeks, and it drops pages that are slow or error out. Anything that matters for ranking, your headings and body copy, is invisible on the first pass.",
+      howToFix:
+        "Check it yourself: open the page, view source, and search for a sentence you can see on screen. If it isn't in the source, Google's first pass doesn't see it either. Server-render or pre-render the pages you want ranked. In Next.js that means a server component or static generation; most frameworks have an equivalent.",
+      affectedUrls: blindPages.slice(0, MAX_STORED_URLS).map((page) => page.url),
+      affectedCount: blindPages.length,
+      rank: 6,
+    });
+  }
+
   // --- Per-page checks, collapsed into one finding each --------------------
   for (const check of PAGE_CHECKS) {
-    const failing = crawl.pages.filter(check.test);
+    const candidates = TEXT_DERIVED.has(check.code)
+      ? crawl.pages.filter((page) => !page.isClientRendered)
+      : crawl.pages;
+    const failing = candidates.filter(check.test);
     if (failing.length === 0) continue;
 
     issues.push({
